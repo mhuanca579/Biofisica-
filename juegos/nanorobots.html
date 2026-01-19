@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Simulación: Nanorobots y liberación dirigida</title>
+  <style>
+    :root{
+      --bg:#05070f;
+      --panel:#0b1020;
+      --border:rgba(255,255,255,.12);
+      --txt:#e9ecff;
+      --muted:rgba(233,236,255,.72);
+      --acc:#5eead4;
+      --acc2:#60a5fa;
+      --danger:#fb7185;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Arial, sans-serif; background:var(--bg); color:var(--txt)}
+    header{
+      padding:12px 12px 0;
+      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .tag{
+      font-size:12px; padding:7px 10px; border-radius:999px;
+      border:1px solid rgba(94,234,212,.25);
+      background: rgba(94,234,212,.10);
+      color: var(--acc);
+      font-weight:700;
+    }
+    main{
+      padding:12px;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:12px;
+      align-items:stretch;
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+    }
+    canvas{
+      width:100%; height:auto; display:block;
+      border-radius:var(--radius);
+      background:#000;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    label{display:block; margin:10px 0 6px; color:var(--muted); font-size:12px}
+    input[type="range"]{width:100%}
+    .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    button{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color:var(--txt);
+      padding:10px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      flex: 1;
+      min-width:110px;
+    }
+    button.primary{
+      background: linear-gradient(135deg, rgba(94,234,212,.18), rgba(96,165,250,.18));
+      border-color: rgba(255,255,255,.18);
+    }
+    .kpi{
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:10px; margin-top:10px;
+    }
+    .kpi .box{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      border-radius:14px;
+      padding:10px;
+    }
+    .big{font-size:18px; font-weight:800}
+    .hint{font-size:11px; color:rgba(233,236,255,.62); margin-top:8px; line-height:1.3}
+    .legend{
+      margin-top:10px;
+      font-size:12px; color:rgba(233,236,255,.74);
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .dot{display:inline-block; width:10px; height:10px; border-radius:999px; margin-right:6px; vertical-align:middle}
+    @media (max-width:880px){
+      main{grid-template-columns:1fr}
+      button{min-width:140px}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="tag">🧪 Modelo educativo (interactivo)</div>
+  <div class="tag" style="border-color:rgba(96,165,250,.25); background:rgba(96,165,250,.10); color:var(--acc2)">
+    🎯 Targeting + Liberación
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <b style="display:block; margin-bottom:4px;">Controles</b>
+    <div class="hint">Ajusta los sliders y mira cuántos nanorobots alcanzan el tumor y liberan el fármaco.</div>
+
+    <label>Número de nanorobots</label>
+    <input id="nBots" type="range" min="20" max="220" step="10" value="120"/>
+
+    <label>Flujo sanguíneo (velocidad)</label>
+    <input id="flow" type="range" min="0.2" max="2.5" step="0.1" value="1.2"/>
+
+    <label>Fuerza de direccionamiento al tumor (targeting)</label>
+    <input id="target" type="range" min="0" max="2.5" step="0.05" value="1.35"/>
+
+    <label>Tasa de liberación del fármaco en el tumor</label>
+    <input id="release" type="range" min="0" max="2.0" step="0.05" value="0.85"/>
+
+    <label>Defensa inmune / aclaramiento (elimina nanorobots)</label>
+    <input id="immune" type="range" min="0" max="1.0" step="0.02" value="0.20"/>
+
+    <label>Dosis por nanorobot</label>
+    <input id="dose" type="range" min="0.5" max="3.0" step="0.1" value="1.5"/>
+
+    <div class="row">
+      <button id="toggle" class="primary">⏸ Pausar</button>
+      <button id="reset">🔄 Reiniciar</button>
+      <button id="challenge">🏁 Desafío</button>
+    </div>
+
+    <div class="kpi">
+      <div class="box">
+        <div style="color:rgba(233,236,255,.7); font-size:12px;">% que llega al tumor</div>
+        <div class="big" id="kReach">0%</div>
+      </div>
+      <div class="box">
+        <div style="color:rgba(233,236,255,.7); font-size:12px;">Dosis liberada (tumor)</div>
+        <div class="big" id="kDose">0.0</div>
+      </div>
+      <div class="box">
+        <div style="color:rgba(233,236,255,.7); font-size:12px;">Nanorobots activos</div>
+        <div class="big" id="kAlive">0</div>
+      </div>
+      <div class="box">
+        <div style="color:rgba(233,236,255,.7); font-size:12px;">Tamaño tumoral (teórico)</div>
+        <div class="big" id="kTumor">100%</div>
+      </div>
+    </div>
+
+    <div class="hint" id="goalText" style="margin-top:10px;">
+      Tip: sube el targeting y ajusta liberación para maximizar dosis en tumor sin perder demasiados nanorobots por el “inmune”.
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:#fb7185"></span>Tumor</span>
+      <span><span class="dot" style="background:#5eead4"></span>Nanorobot</span>
+      <span><span class="dot" style="background:#60a5fa"></span>Nanorobot “cargado” (alto fármaco)</span>
+      <span><span class="dot" style="background:#fbbf24"></span>Liberación (destello)</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <canvas id="cv" width="980" height="520"></canvas>
+    <div class="hint">
+      El área negra representa el “vaso” (flujo hacia la derecha). El tumor (rojo) está al costado: el targeting “jala” nanorobots hacia él.
+    </div>
+  </section>
+</main>
+
+<script>
+  // === Utilidades ===
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const rand=(a,b)=>a+Math.random()*(b-a);
+
+  // === UI ===
+  const ui = {
+    nBots: document.getElementById("nBots"),
+    flow: document.getElementById("flow"),
+    target: document.getElementById("target"),
+    release: document.getElementById("release"),
+    immune: document.getElementById("immune"),
+    dose: document.getElementById("dose"),
+    toggle: document.getElementById("toggle"),
+    reset: document.getElementById("reset"),
+    challenge: document.getElementById("challenge"),
+    kReach: document.getElementById("kReach"),
+    kDose: document.getElementById("kDose"),
+    kAlive: document.getElementById("kAlive"),
+    kTumor: document.getElementById("kTumor"),
+    goalText: document.getElementById("goalText"),
+  };
+
+  const cv = document.getElementById("cv");
+  const ctx = cv.getContext("2d");
+
+  // === Mundo (simplificado) ===
+  // "Vaso sanguíneo" es un rectángulo central; tumor está afuera (lado inferior derecho).
+  const vessel = { x: 40, y: 90, w: cv.width-80, h: cv.height-180 };
+  const tumor = { x: vessel.x + vessel.w*0.70, y: vessel.y + vessel.h*0.78, r: 55 };
+
+  let bots = [];
+  let running = true;
+
+  // métricas
+  let totalSpawned = 0;
+  let reachedTumor = 0;   // conteo bots que tocan tumor al menos una vez
+  let releasedDose = 0;   // dosis liberada acumulada
+  let tumorSize = 1.0;    // 1 = 100%
+
+  // "destellos" de liberación
+  let bursts = [];
+
+  // modo desafío (meta)
+  let goal = { reachMin: 55, doseMin: 120, timeLimit: 35, startTime: null, active:false };
+
+  function spawnBots(n){
+    bots = [];
+    bursts = [];
+    totalSpawned = n;
+    reachedTumor = 0;
+    releasedDose = 0;
+    tumorSize = 1.0;
+
+    for(let i=0;i<n;i++){
+      // nacen al inicio del vaso
+      const b = {
+        x: vessel.x + rand(5, 25),
+        y: vessel.y + rand(10, vessel.h-10),
+        vx: rand(0.6, 1.2),
+        vy: rand(-0.25, 0.25),
+        drug: parseFloat(ui.dose.value),  // “carga”
+        touched: false,
+        alive: true
+      };
+      bots.push(b);
+    }
+  }
+
+  function reset(){
+    spawnBots(parseInt(ui.nBots.value,10));
+    if(goal.active){
+      goal.startTime = performance.now();
+      ui.goalText.textContent = `🏁 Desafío: lograr ≥ ${goal.reachMin}% alcance y ≥ ${goal.doseMin} dosis en ≤ ${goal.timeLimit}s`;
+    } else {
+      ui.goalText.textContent = "Tip: sube el targeting y ajusta liberación para maximizar dosis en tumor sin perder demasiados nanorobots por el “inmune”.";
+    }
+  }
+
+  // fuerza de “targeting” hacia tumor (atracción suave)
+  function attractForce(b, strength){
+    const dx = tumor.x - b.x;
+    const dy = tumor.y - b.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) + 0.0001;
+    const pull = strength / (dist*0.08); // decae con distancia
+    return { ax: (dx/dist)*pull, ay: (dy/dist)*pull };
+  }
+
+  function inVessel(b){
+    return (b.x>=vessel.x && b.x<=vessel.x+vessel.w && b.y>=vessel.y && b.y<=vessel.y+vessel.h);
+  }
+
+  function step(dt){
+    const flow = parseFloat(ui.flow.value);
+    const target = parseFloat(ui.target.value);
+    const release = parseFloat(ui.release.value);
+    const immune = parseFloat(ui.immune.value);
+
+    // inmune: probabilidad de eliminar bots por segundo (sube con immune)
+    const killProb = clamp(immune * 0.28 * dt, 0, 0.12);
+
+    for(const b of bots){
+      if(!b.alive) continue;
+
+      // muerte por aclaramiento (simple)
+      if(Math.random() < killProb){
+        b.alive = false;
+        continue;
+      }
+
+      // flujo principal hacia la derecha
+      b.vx += 0.0;
+      b.x += (b.vx * flow) * 60 * dt;
+
+      // pequeña turbulencia/ruido
+      b.vy += rand(-0.05, 0.05);
+      b.y += b.vy * 60 * dt;
+
+      // rebotes dentro del vaso
+      if(b.y < vessel.y+6){ b.y = vessel.y+6; b.vy *= -0.7; }
+      if(b.y > vessel.y+vessel.h-6){ b.y = vessel.y+vessel.h-6; b.vy *= -0.7; }
+
+      // targeting atrae hacia tumor (aunque esté fuera, “jala” hacia la zona)
+      const f = attractForce(b, target);
+      b.x += f.ax * 60 * dt;
+      b.y += f.ay * 60 * dt;
+
+      // si sale del vaso a la derecha, reaparece por izquierda (circulación)
+      if(b.x > vessel.x + vessel.w + 30){
+        b.x = vessel.x + rand(5, 25);
+        b.y = vessel.y + rand(10, vessel.h-10);
+        b.vx = rand(0.6, 1.2);
+        b.vy = rand(-0.25, 0.25);
+      }
+
+      // interacción con tumor: si entra en radio, libera parte del fármaco
+      const dx = b.x - tumor.x;
+      const dy = b.y - tumor.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < tumor.r){
+        if(!b.touched){
+          b.touched = true;
+          reachedTumor += 1;
+        }
+
+        // libera más si release es alto, pero limitada por lo que queda
+        const dRel = clamp(release * 0.9 * dt * 10, 0, 0.6); // dosis/seg
+        const amount = Math.min(b.drug, dRel);
+        b.drug -= amount;
+        releasedDose += amount;
+
+        // destello visual
+        if(amount > 0.02){
+          bursts.push({x:b.x,y:b.y,life:0.25});
+        }
+      }
+    }
+
+    // decay tumorSize (modelo educativo simple):
+    // mientras más dosis acumulada, baja tumor size, con saturación y “resistencia”
+    const effectiveness = 0.0009;     // escala
+    const resistance = 0.0000012;     // frena con dosis alta
+    const decay = (releasedDose*effectiveness) / (1 + releasedDose*resistance);
+    tumorSize = clamp(1 - decay, 0.10, 1.0);
+
+    // actualizar bursts
+    bursts = bursts.filter(p => (p.life -= dt) > 0);
+
+    // KPIs
+    const alive = bots.filter(b=>b.alive).length;
+    const reachPct = totalSpawned>0 ? (reachedTumor/totalSpawned)*100 : 0;
+
+    ui.kAlive.textContent = alive.toString();
+    ui.kReach.textContent = `${Math.round(reachPct)}%`;
+    ui.kDose.textContent = releasedDose.toFixed(1);
+    ui.kTumor.textContent = `${Math.round(tumorSize*100)}%`;
+
+    // desafío
+    if(goal.active && goal.startTime){
+      const tsec = (performance.now()-goal.startTime)/1000;
+      if(tsec > goal.timeLimit){
+        goal.active = false;
+        ui.goalText.textContent = `⏱️ Tiempo agotado. Intenta otra vez: sube targeting o baja immune para mejorar alcance.`;
+      } else {
+        const okReach = reachPct >= goal.reachMin;
+        const okDose = releasedDose >= goal.doseMin;
+        if(okReach && okDose){
+          goal.active = false;
+          ui.goalText.textContent = `✅ ¡Logrado en ${tsec.toFixed(1)}s! Alcance ${Math.round(reachPct)}% y dosis ${releasedDose.toFixed(1)}.`;
+        } else {
+          ui.goalText.textContent = `🏁 Desafío: ≥ ${goal.reachMin}% alcance y ≥ ${goal.doseMin} dosis | Tiempo: ${(goal.timeLimit - tsec).toFixed(1)}s`;
+        }
+      }
+    }
+  }
+
+  function draw(){
+    // fondo
+    ctx.clearRect(0,0,cv.width,cv.height);
+
+    // “vessel”
+    ctx.fillStyle = "#000";
+    ctx.fillRect(vessel.x, vessel.y, vessel.w, vessel.h);
+
+    // borde vessel
+    ctx.strokeStyle = "rgba(255,255,255,.12)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(vessel.x, vessel.y, vessel.w, vessel.h);
+
+    // tumor
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(251,113,133,.95)";
+    ctx.arc(tumor.x, tumor.y, tumor.r * (0.75 + 0.25*tumorSize), 0, Math.PI*2);
+    ctx.fill();
+
+    // halo tumor
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(251,113,133,.35)";
+    ctx.lineWidth = 8;
+    ctx.arc(tumor.x, tumor.y, tumor.r * 1.15, 0, Math.PI*2);
+    ctx.stroke();
+
+    // bots
+    for(const b of bots){
+      if(!b.alive) continue;
+
+      const loaded = b.drug > 0.6;
+      ctx.beginPath();
+      ctx.fillStyle = loaded ? "rgba(96,165,250,.95)" : "rgba(94,234,212,.95)";
+      ctx.arc(b.x, b.y, 3.2, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // bursts (liberación)
+    for(const p of bursts){
+      const a = clamp(p.life/0.25,0,1);
+      ctx.beginPath();
+      ctx.strokeStyle = `rgba(251,191,36,${0.85*a})`;
+      ctx.lineWidth = 2.5;
+      ctx.arc(p.x, p.y, 10*(1-a)+6, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    // texto overlay
+    ctx.fillStyle = "rgba(233,236,255,.85)";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("Flujo →", vessel.x + 12, vessel.y + 22);
+  }
+
+  // loop
+  let last = performance.now();
+  function loop(now){
+    const dt = clamp((now-last)/1000, 0, 0.05);
+    last = now;
+
+    if(running) step(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // eventos
+  ui.toggle.onclick = ()=>{
+    running = !running;
+    ui.toggle.textContent = running ? "⏸ Pausar" : "▶ Reanudar";
+  };
+
+  ui.reset.onclick = ()=>{
+    goal.active = false;
+    reset();
+  };
+
+  ui.challenge.onclick = ()=>{
+    goal = {
+      reachMin: 60 + Math.floor(Math.random()*15),  // 60–74%
+      doseMin: 110 + Math.floor(Math.random()*70),  // 110–179
+      timeLimit: 30 + Math.floor(Math.random()*15), // 30–44s
+      startTime: performance.now(),
+      active:true
+    };
+    reset();
+  };
+
+  // si cambias sliders, reinicia para que sea “justo” visualmente
+  for(const id of ["nBots","flow","target","release","immune","dose"]){
+    ui[id].addEventListener("input", ()=>{
+      if(id==="nBots") reset();
+    });
+  }
+
+  reset();
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>
