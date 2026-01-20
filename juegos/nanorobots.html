@@ -1,515 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gotas neuroprotectoras: Simulación Retina</title>
+<meta charset="UTF-8">
+<title>Retina - Simulación Neuroprotectora</title>
 <style>
-  :root{
-    --bg:#05070f; --b:rgba(255,255,255,.12);
-    --txt:#e9ecff; --mut:rgba(233,236,255,.72);
-    --acc:#5eead4; --acc2:#60a5fa; --warn:#fbbf24;
-    --r:16px;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Arial;background:var(--bg);color:var(--txt)}
-  header{padding:10px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-  .tag{font-size:12px;padding:7px 10px;border-radius:999px;border:1px solid var(--b);background:rgba(255,255,255,.06);color:var(--txt);font-weight:700}
-  main{padding:12px;display:grid;grid-template-columns:380px 1fr;gap:12px}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border:1px solid var(--b);border-radius:var(--r);padding:12px}
-  label{display:block;margin:10px 0 6px;color:var(--mut);font-size:12px}
-  input[type="range"], select{width:100%}
-  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  button{flex:1;min-width:120px;border:1px solid var(--b);background:rgba(255,255,255,.06);color:var(--txt);padding:10px;border-radius:12px;cursor:pointer;font-weight:800}
-  button.primary{background:linear-gradient(135deg,rgba(94,234,212,.18),rgba(96,165,250,.18));border-color:rgba(255,255,255,.18)}
-  button.on{border-color:rgba(251,191,36,.45); background:rgba(251,191,36,.12)}
-  canvas{width:100%;height:auto;display:block;border-radius:var(--r);background:#000;border:1px solid rgba(255,255,255,.10)}
-  .kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-  .box{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);border-radius:14px;padding:10px}
-  .big{font-size:18px;font-weight:900}
-  .hint{font-size:11px;color:rgba(233,236,255,.62);margin-top:8px;line-height:1.35}
-  @media(max-width:900px){main{grid-template-columns:1fr}}
+body{margin:0;background:#060b18;color:#e8f0ff;font-family:Arial}
+#ui{position:absolute;left:10px;top:10px;width:300px;background:#0f172a;padding:12px;border-radius:12px}
+label{font-size:12px}
+canvas{display:block;margin-left:320px;background:#000;border-left:3px solid #38bdf8}
+button,select,input{width:100%;margin-top:6px}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="tag">👁️ Retina • Modelo educativo</div>
-  <div class="tag" style="border-color:rgba(94,234,212,.25);background:rgba(94,234,212,.10);color:var(--acc)">🧠 Neuroprotección + liberación dirigida</div>
-</header>
+<div id="ui">
+<h3>Gotas neuroprotectoras</h3>
+<label>Vehículo</label>
+<select id="tipo">
+<option value="1">Liposoma</option>
+<option value="1.2">Magnético</option>
+<option value="1.5">Anticuerpo dirigido</option>
+</select>
 
-<main>
-  <section class="card">
-    <b>Controles</b>
-    <div class="hint">
-      Objetivo: <b>subir la viabilidad de fotorreceptores</b> sin aumentar efectos fuera del objetivo.
-      (Empieza con una animación de aplicación.)
-    </div>
+<label>Cantidad aplicada</label>
+<input type="range" id="cantidad" min="10" max="200" value="80">
 
-    <label>Vehículo de la gota (transporte)</label>
-    <select id="type">
-      <option value="liposoma">Liposoma (suave, baja irritación)</option>
-      <option value="magnetico">Nanoportador guiado (mejor direccionamiento)</option>
-      <option value="anticuerpo">Ligando dirigido (alta afinidad por retina lesionada)</option>
-    </select>
+<label>Direccionamiento</label>
+<input type="range" id="target" min="0" max="100" value="60">
 
-    <label>Cantidad aplicada (microcápsulas)</label>
-    <input id="nBots" type="range" min="40" max="240" step="10" value="130"/>
+<label>Liberación fuera del objetivo</label>
+<input type="range" id="libre" min="0" max="100" value="20">
 
-    <label>Flujo/Distribución (movimiento del líquido)</label>
-    <input id="flow" type="range" min="0.2" max="2.7" step="0.1" value="1.2"/>
+<button onclick="inyectar()">Inyectar gotas</button>
+</div>
 
-    <label>Direccionalidad a la retina (targeting)</label>
-    <input id="target" type="range" min="0" max="2.8" step="0.05" value="1.35"/>
-
-    <label>Liberación basal (fuera del objetivo = irritación)</label>
-    <input id="releaseBase" type="range" min="0" max="1.2" step="0.05" value="0.20"/>
-
-    <label>Activación local (libera más en retina)</label>
-    <input id="phGate" type="range" min="0" max="2.2" step="0.05" value="1.10"/>
-
-    <label>Condición local (microambiente de lesión)</label>
-    <input id="ph" type="range" min="5.8" max="7.4" step="0.1" value="6.5"/>
-
-    <label>Eliminación natural (lavado / drenaje)</label>
-    <input id="immune" type="range" min="0" max="1.0" step="0.02" value="0.20"/>
-
-    <label>Potencia neuroprotectora (por microcápsula)</label>
-    <input id="dose" type="range" min="0.6" max="3.2" step="0.1" value="1.6"/>
-
-    <div class="row">
-      <button id="toggle" class="primary">⏸ Pausar</button>
-      <button id="external">🔆 Activación OFF</button>
-      <button id="bolus">💧 Aplicar refuerzo</button>
-      <button id="reset">🔄 Reiniciar</button>
-    </div>
-
-    <div class="kpi">
-      <div class="box"><div style="color:rgba(233,236,255,.7);font-size:12px;">% llega a retina</div><div class="big" id="kReach">0%</div></div>
-      <div class="box"><div style="color:rgba(233,236,255,.7);font-size:12px;">Dosis en retina</div><div class="big" id="kDoseT">0.0</div></div>
-      <div class="box"><div style="color:rgba(233,236,255,.7);font-size:12px;">Efectos fuera objetivo</div><div class="big" id="kTox">0%</div></div>
-      <div class="box"><div style="color:rgba(233,236,255,.7);font-size:12px;">Viabilidad fotorreceptores</div><div class="big" id="kViab">70%</div></div>
-    </div>
-
-    <div class="hint" id="statusText" style="margin-top:10px;">
-      Tip: baja liberación basal y usa activación local para mejorar viabilidad sin irritación.
-    </div>
-  </section>
-
-  <section class="card">
-    <canvas id="cv" width="1000" height="520"></canvas>
-    <canvas id="chart" width="1000" height="140" style="margin-top:10px;"></canvas>
-    <div class="hint">
-      Arriba: microcápsulas y zona de retina lesionada. Abajo: viabilidad (%) y efectos fuera objetivo (%) vs tiempo.
-    </div>
-  </section>
-</main>
+<canvas id="cv" width="900" height="500"></canvas>
 
 <script>
-  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const rand=(a,b)=>a+Math.random()*(b-a);
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+let bots=[],tumor={x:650,y:250,r:70},size=100;
 
-  const ui = {
-    type: type, nBots:nBots, flow:flow, target:target,
-    releaseBase:releaseBase, phGate:phGate, ph:ph,
-    immune:immune, dose:dose,
-    toggle:toggle, external:external, bolus:bolus, reset:reset,
-    kReach:kReach, kDoseT:kDoseT, kTox:kTox, kViab:kViab,
-    statusText: statusText
-  };
+function inyectar(){
+ bots=[];
+ const n=+cantidad.value;
+ for(let i=0;i<n;i++){
+  bots.push({x:50,y:250+Math.random()*80-40,v:1+Math.random(),hit:false});
+ }
+}
 
-  const cv = document.getElementById("cv");
-  const ctx = cv.getContext("2d");
-  const chart = document.getElementById("chart");
-  const cctx = chart.getContext("2d");
+function loop(){
+ ctx.clearRect(0,0,cv.width,cv.height);
+ ctx.strokeStyle="#38bdf8";
+ ctx.beginPath();ctx.arc(tumor.x,tumor.y,tumor.r,0,6.28);ctx.stroke();
 
-  const field = { x: 40, y: 90, w: cv.width-80, h: cv.height-180 };
-  const retina = { x: field.x + field.w*0.75, y: field.y + field.h*0.75, r: 60 };
+ let hit=0;
+ bots.forEach(b=>{
+  b.x+=b.v*(+tipo.value);
+  if(Math.hypot(b.x-tumor.x,b.y-tumor.y)<tumor.r) b.hit=true;
+  ctx.fillStyle=b.hit?"#22c55e":"#60a5fa";
+  ctx.beginPath();ctx.arc(b.x,b.y,3,0,6.28);ctx.fill();
+  if(b.hit) hit++;
+ });
 
-  let particles=[], bursts=[];
-  let running=true;
+ size=Math.max(10,size-hit*0.02*(target.value/100));
+ ctx.fillStyle="#22c55e";
+ ctx.fillRect(10,460,size,10);
 
-  let mode="intro";
-  let introT=0;
-  let dropped=false;
-
-  let externalOn=false;
-
-  let totalSpawned=0, reachedRetina=0;
-  let doseRetina=0, doseOff=0;
-
-  let viability=0.70;
-  let time=0;
-  let hist=[];
-
-  function typeParams(){
-    const t = ui.type.value;
-    if(t==="liposoma")  return { targetMul:0.95, baseRelMul:0.75, washMul:0.90, localMul:1.00, extMul:1.10 };
-    if(t==="magnetico") return { targetMul:1.20, baseRelMul:1.05, washMul:1.05, localMul:0.95, extMul:1.25 };
-    return { targetMul:1.35, baseRelMul:0.90, washMul:1.15, localMul:1.10, extMul:1.00 };
+ window.parent.postMessage({
+  type:"NANO_METRICS",
+  payload:{
+   reachPct:hit/bots.length*100||0,
+   doseTumor:hit,
+   toxicity:libre.value,
+   tumorPct:size
   }
+ },"*");
 
-  function spawn(n){
-    particles=[]; bursts=[];
-    totalSpawned=n; reachedRetina=0;
-    doseRetina=0; doseOff=0;
-    viability=0.70; time=0; hist=[];
-    for(let i=0;i<n;i++){
-      particles.push({
-        x: field.x + rand(5,25),
-        y: field.y + rand(10, field.h-10),
-        vx: rand(0.6,1.2),
-        vy: rand(-0.25,0.25),
-        drug: parseFloat(ui.dose.value),
-        touched:false, alive:true
-      });
-    }
-  }
-
-  function startSim(){
-    // Inicia simulación sin tocar el modo (para evitar “trabarse”)
-    spawn(parseInt(ui.nBots.value,10));
-    externalOn=false;
-    ui.external.textContent="🔆 Activación OFF";
-    ui.external.classList.remove("on");
-    running=true;
-    ui.toggle.textContent="⏸ Pausar";
-  }
-
-  function addBoost(){
-    const extra = Math.floor(parseInt(ui.nBots.value,10)*0.35);
-    for(let i=0;i<extra;i++){
-      particles.push({
-        x: field.x + rand(5,25),
-        y: field.y + rand(10, field.h-10),
-        vx: rand(0.6,1.2),
-        vy: rand(-0.25,0.25),
-        drug: parseFloat(ui.dose.value),
-        touched:false, alive:true
-      });
-    }
-    totalSpawned += extra;
-    ui.statusText.textContent = `💧 Refuerzo aplicado: +${extra} microcápsulas.`;
-  }
-
-  function attractForce(p, strength){
-    const dx=retina.x-p.x, dy=retina.y-p.y;
-    const dist=Math.sqrt(dx*dx+dy*dy)+0.0001;
-    const pull=strength/(dist*0.08);
-    return {ax:(dx/dist)*pull, ay:(dy/dist)*pull};
-  }
-
-  function step(dt){
-    time += dt;
-    const P = typeParams();
-
-    const flow      = parseFloat(ui.flow.value);
-    const targeting = parseFloat(ui.target.value) * P.targetMul;
-    const baseRel   = parseFloat(ui.releaseBase.value) * P.baseRelMul;
-    const localGate = parseFloat(ui.phGate.value) * P.localMul;
-    const env       = parseFloat(ui.ph.value);
-    const wash      = parseFloat(ui.immune.value) * P.washMul;
-
-    const envFactor = clamp((7.4 - env) / (7.4 - 5.8), 0, 1);
-    const killProb = clamp(wash * 0.28 * dt, 0, 0.12);
-    const extBoost = externalOn ? (0.35 * P.extMul) : 0.0;
-
-    for(const p of particles){
-      if(!p.alive) continue;
-      if(Math.random() < killProb){ p.alive=false; continue; }
-
-      p.x += (p.vx * flow) * 60 * dt;
-      p.vy += rand(-0.05,0.05);
-      p.y += p.vy * 60 * dt;
-
-      if(p.y < field.y+6){ p.y=field.y+6; p.vy*=-0.7; }
-      if(p.y > field.y+field.h-6){ p.y=field.y+field.h-6; p.vy*=-0.7; }
-
-      const f = attractForce(p, targeting);
-      p.x += f.ax * 60 * dt;
-      p.y += f.ay * 60 * dt;
-
-      if(p.x > field.x + field.w + 30){
-        p.x = field.x + rand(5,25);
-        p.y = field.y + rand(10, field.h-10);
-        p.vx = rand(0.6,1.2);
-        p.vy = rand(-0.25,0.25);
-      }
-
-      // fuera del objetivo -> irritación
-      if(p.drug > 0){
-        const base = clamp(baseRel * dt * 8, 0, 0.25);
-        const out = Math.min(p.drug, base);
-        p.drug -= out;
-        doseOff += out;
-      }
-
-      const dx=p.x-retina.x, dy=p.y-retina.y;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-
-      if(dist < retina.r){
-        if(!p.touched){ p.touched=true; reachedRetina++; }
-
-        const local = clamp(((localGate*envFactor) + extBoost) * dt * 10, 0, 0.70);
-        const amount = Math.min(p.drug, local);
-        p.drug -= amount;
-        doseRetina += amount;
-
-        if(amount > 0.02) bursts.push({x:p.x,y:p.y,life:0.25});
-      }
-    }
-
-    // métricas
-    const tox = clamp((doseOff / (totalSpawned*parseFloat(ui.dose.value)+1)) * 260, 0, 100);
-    const protect = 0.00085;
-    const penalty = 0.00030;
-
-    viability = clamp(viability + (doseRetina*protect) - (tox*penalty), 0.10, 0.99);
-
-    bursts = bursts.filter(b => (b.life -= dt) > 0);
-
-    const reachPct = totalSpawned>0 ? (reachedRetina/totalSpawned)*100 : 0;
-
-    ui.kReach.textContent = `${Math.round(reachPct)}%`;
-    ui.kDoseT.textContent = doseRetina.toFixed(1);
-    ui.kTox.textContent = `${Math.round(tox)}%`;
-    ui.kViab.textContent = `${Math.round(viability*100)}%`;
-
-    hist.push({t: time, viab: viability*100, tox: tox});
-    hist = hist.filter(p => time - p.t <= 45);
-
-    // enviar a la página principal
-    if(Math.floor(time*2) !== Math.floor((time-dt)*2)){
-      window.parent?.postMessage({
-        type:"NANO_METRICS",
-        payload:{
-          reachPct: reachPct,
-          doseTumor: doseRetina,
-          toxicity: tox,
-          tumorPct: viability*100
-        }
-      }, "*");
-    }
-  }
-
-  function drawSim(){
-    ctx.clearRect(0,0,cv.width,cv.height);
-
-    ctx.fillStyle="#000";
-    ctx.fillRect(field.x, field.y, field.w, field.h);
-    ctx.strokeStyle="rgba(255,255,255,.12)";
-    ctx.lineWidth=2;
-    ctx.strokeRect(field.x, field.y, field.w, field.h);
-
-    // zona retina
-    const rr = retina.r*(0.90 + 0.10*(1-viability));
-    ctx.beginPath();
-    ctx.fillStyle="rgba(96,165,250,.35)";
-    ctx.arc(retina.x, retina.y, rr, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.strokeStyle="rgba(96,165,250,.55)";
-    ctx.lineWidth=8;
-    ctx.arc(retina.x, retina.y, retina.r*1.15, 0, Math.PI*2);
-    ctx.stroke();
-
-    for(const p of particles){
-      if(!p.alive) continue;
-      const loaded = p.drug > 0.6;
-      ctx.beginPath();
-      ctx.fillStyle = loaded ? "rgba(94,234,212,.95)" : "rgba(251,191,36,.95)";
-      ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    for(const b of bursts){
-      const a = clamp(b.life/0.25,0,1);
-      ctx.beginPath();
-      ctx.strokeStyle = `rgba(251,191,36,${0.85*a})`;
-      ctx.lineWidth = 2.5;
-      ctx.arc(b.x, b.y, 10*(1-a)+6, 0, Math.PI*2);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle="rgba(233,236,255,.85)";
-    ctx.font="bold 14px Arial";
-    ctx.fillText("Distribución →", field.x+12, field.y+22);
-
-    if(externalOn){
-      ctx.fillStyle="rgba(251,191,36,.85)";
-      ctx.font="bold 14px Arial";
-      ctx.fillText("Activación local ON", field.x+12, field.y+42);
-    }
-
-    ctx.fillStyle="rgba(233,236,255,.75)";
-    ctx.font="12px Arial";
-    ctx.fillText("Zona objetivo: retina lesionada", retina.x-85, retina.y-retina.r-18);
-  }
-
-  function drawChart(){
-    cctx.clearRect(0,0,chart.width,chart.height);
-    cctx.fillStyle="#000";
-    cctx.fillRect(0,0,chart.width,chart.height);
-    cctx.strokeStyle="rgba(255,255,255,.12)";
-    cctx.strokeRect(0,0,chart.width,chart.height);
-
-    cctx.fillStyle="rgba(233,236,255,.75)";
-    cctx.font="12px Arial";
-    cctx.fillText("Viabilidad % (azul)  |  Efectos fuera objetivo % (amarillo)", 10, 18);
-
-    if(hist.length < 2) return;
-
-    const tMin=hist[0].t, tMax=hist[hist.length-1].t;
-    const xOf=(t)=>((t-tMin)/Math.max(0.0001,(tMax-tMin)))*(chart.width-20)+10;
-    const yOf=(v)=>chart.height-18 - (v/100)*(chart.height-36);
-
-    cctx.strokeStyle="rgba(96,165,250,.95)";
-    cctx.lineWidth=2;
-    cctx.beginPath();
-    hist.forEach((p,i)=>{ const x=xOf(p.t), y=yOf(p.viab); if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y); });
-    cctx.stroke();
-
-    cctx.strokeStyle="rgba(251,191,36,.95)";
-    cctx.lineWidth=2;
-    cctx.beginPath();
-    hist.forEach((p,i)=>{ const x=xOf(p.t), y=yOf(p.tox); if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y); });
-    cctx.stroke();
-  }
-
-  function drawIntro(dt){
-    introT += dt;
-    ctx.clearRect(0,0,cv.width,cv.height);
-
-    ctx.fillStyle="#000";
-    ctx.fillRect(field.x, field.y, field.w, field.h);
-    ctx.strokeStyle="rgba(255,255,255,.12)";
-    ctx.lineWidth=2;
-    ctx.strokeRect(field.x, field.y, field.w, field.h);
-
-    ctx.beginPath();
-    ctx.fillStyle="rgba(96,165,250,.25)";
-    ctx.arc(retina.x, retina.y, retina.r, 0, Math.PI*2);
-    ctx.fill();
-
-    const enter = clamp(introT/1.2, 0, 1);
-    const dripPhase = (introT>1.2 && introT<2.4);
-    const exit  = clamp((introT-2.4)/0.8, 0, 1);
-
-    const gx = field.x + field.w*0.22;
-    let gy = -80 + enter*(field.y+60+80);
-    if(introT>2.4) gy = (field.y+60) + exit*(cv.height+120);
-
-    ctx.beginPath();
-    ctx.fillStyle="rgba(94,234,212,.90)";
-    ctx.ellipse(gx, gy, 16, 24, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    if(dripPhase && !dropped){
-      for(let i=0;i<40;i++){
-        bursts.push({x:gx+rand(-6,6), y:gy+28+rand(-6,6), life:0.8});
-      }
-      dropped=true;
-    }
-
-    bursts = bursts.filter(p => (p.life -= dt) > 0);
-    for(const p of bursts){
-      ctx.beginPath();
-      ctx.fillStyle=`rgba(94,234,212,${clamp(p.life/0.8,0,1)})`;
-      ctx.arc(p.x + rand(0,2), p.y + rand(-1,1), 2.2, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle="rgba(233,236,255,.90)";
-    ctx.font="bold 20px Arial";
-    ctx.fillText("Aplicación de gotas neuroprotectoras", field.x+18, field.y-20);
-
-    ctx.font="14px Arial";
-    ctx.fillStyle="rgba(233,236,255,.70)";
-    ctx.fillText("Iniciando simulación…", field.x+18, field.y+22);
-
-    // botón saltar
-    ctx.fillStyle="rgba(255,255,255,.08)";
-    ctx.fillRect(cv.width-140, 16, 120, 34);
-    ctx.strokeStyle="rgba(255,255,255,.15)";
-    ctx.strokeRect(cv.width-140, 16, 120, 34);
-    ctx.fillStyle="rgba(233,236,255,.85)";
-    ctx.font="bold 14px Arial";
-    ctx.fillText("Saltar ▶", cv.width-108, 38);
-
-    if(introT >= 3.2){
-      mode="sim";
-      startSim();
-      ui.statusText.textContent="✅ Aplicación completada. Ajusta parámetros y observa la viabilidad.";
-    }
-  }
-
-  cv.addEventListener("click",(e)=>{
-    const r=cv.getBoundingClientRect();
-    const x=(e.clientX-r.left)*(cv.width/r.width);
-    const y=(e.clientY-r.top)*(cv.height/r.height);
-    if(x>=cv.width-140 && x<=cv.width-20 && y>=16 && y<=50){
-      mode="sim";
-      startSim();
-      ui.statusText.textContent="⏭️ Intro saltada. Simulación iniciada.";
-    }
-  });
-
-  let last=performance.now();
-  function loop(now){
-    const dt=clamp((now-last)/1000,0,0.05);
-    last=now;
-
-    if(mode==="intro"){
-      drawIntro(dt);
-      cctx.clearRect(0,0,chart.width,chart.height);
-      cctx.fillStyle="#000"; cctx.fillRect(0,0,chart.width,chart.height);
-      cctx.strokeStyle="rgba(255,255,255,.12)"; cctx.strokeRect(0,0,chart.width,chart.height);
-      cctx.fillStyle="rgba(233,236,255,.55)";
-      cctx.font="12px Arial";
-      cctx.fillText("Esperando inicio de simulación…", 10, 20);
-    } else {
-      if(running) step(dt);
-      drawSim();
-      drawChart();
-    }
-
-    requestAnimationFrame(loop);
-  }
-
-  ui.toggle.onclick=()=>{
-    running=!running;
-    ui.toggle.textContent = running ? "⏸ Pausar" : "▶ Reanudar";
-  };
-
-  ui.reset.onclick=()=>{
-    mode="intro";
-    introT=0;
-    dropped=false;
-    bursts=[];
-    ui.statusText.textContent="Reiniciado: volverá a iniciar con la animación de aplicación.";
-  };
-
-  ui.bolus.onclick=()=>{
-    if(mode!=="sim") return;
-    addBoost();
-  };
-
-  ui.external.onclick=()=>{
-    if(mode!=="sim") return;
-    externalOn=!externalOn;
-    ui.external.textContent = externalOn ? "🔆 Activación ON" : "🔆 Activación OFF";
-    ui.external.classList.toggle("on", externalOn);
-    ui.statusText.textContent = externalOn
-      ? "🔆 Activación ON: aumenta liberación SOLO en la zona objetivo."
-      : "Activación OFF.";
-  };
-
-  // IMPORTANTE: ya NO reiniciamos con reset al mover sliders (eso causaba trabas)
-  // Si quieres reiniciar con nuevos parámetros, usa el botón “Reiniciar”.
-
-  requestAnimationFrame(loop);
+ requestAnimationFrame(loop);
+}
+loop();
 </script>
-
 </body>
 </html>
