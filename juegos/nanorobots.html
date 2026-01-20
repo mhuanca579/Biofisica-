@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Nanorobots • Inyección IV → sangre → tumor</title>
+<title>NeuroNav-NanoTwin • Simulación (BBB + guía magnética)</title>
 <style>
   :root{
-    --bg:#050814; --panel:#0f172a; --txt:#e9ecff; --mut:rgba(233,236,255,.72);
-    --b:rgba(255,255,255,.12); --acc:#38bdf8; --acc2:#a78bfa; --good:#22c55e; --warn:#fbbf24; --bad:#fb7185;
-    --r:16px;
+    --bg:#050814; --txt:#e9ecff; --mut:rgba(233,236,255,.75);
+    --b:rgba(255,255,255,.12); --acc:#38bdf8; --acc2:#a78bfa;
+    --good:#22c55e; --warn:#fbbf24; --bad:#fb7185;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:Arial;background:var(--bg);color:var(--txt);overflow:hidden}
-  .wrap{display:grid;grid-template-columns:400px 1fr;height:100vh}
-  .panel{padding:14px;border-right:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));overflow:auto}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:380px 1fr;height:100vh}
+  aside{padding:14px;border-right:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));overflow:auto}
   h2{margin:0 0 6px;font-size:18px}
   .hint{font-size:12px;color:var(--mut);line-height:1.35;margin-bottom:10px}
   label{display:block;margin:10px 0 6px;color:var(--mut);font-size:12px}
-  .val{float:right;color:rgba(233,236,255,.85);font-weight:800}
-  input[type="range"], select{width:100%}
+  .val{float:right;font-weight:900;color:rgba(233,236,255,.9)}
+  input[type="range"],select{width:100%}
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   button{
     flex:1;min-width:120px;border:1px solid var(--b);
@@ -26,55 +26,53 @@
     cursor:pointer;font-weight:900
   }
   button.primary{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.12)}
-  .kpiGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
   .kpi{border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.22);border-radius:14px;padding:10px}
   .kpi div{font-size:12px;color:var(--mut)}
   .kpi b{font-size:18px}
-  .stage{padding:12px}
-  canvas{
-    width:100%;height:auto;display:block;border-radius:var(--r);
-    background:#000;border:2px solid rgba(56,189,248,.35)
-  }
+  main{padding:12px}
+  canvas{width:100%;display:block;border-radius:16px;background:#000;border:2px solid rgba(56,189,248,.35)}
   .legend{margin-top:10px;font-size:12px;color:var(--mut);line-height:1.35}
-  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-size:12px;color:var(--mut)}
-  @media(max-width:980px){
-    body{overflow:auto}
-    .wrap{grid-template-columns:1fr;height:auto}
-  }
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
+  @media(max-width:980px){body{overflow:auto}.wrap{grid-template-columns:1fr;height:auto}}
 </style>
 </head>
 <body>
+
 <div class="wrap">
-  <aside class="panel">
-    <h2>Nanorobots (inyección intravenosa)</h2>
+  <aside>
+    <h2>NeuroNav-NanoTwin</h2>
     <div class="hint">
-      Pulsa <b>💉 Inyectar</b> para ver la animación (aguja + émbolo + bolo). Luego ajusta parámetros para guiar nanorobots al tumor.
+      Modelo educativo simplificado: <b>sangre → BBB → tumor</b>. La guía magnética y la permeabilidad BBB aumentan el cruce al tumor; los pulsos controlan cuándo liberar.
     </div>
 
-    <label>Tipo de nanorobot</label>
-    <select id="carrier">
-      <option value="lig">Ligandos (alta afinidad al tumor)</option>
-      <option value="mag">Magnético (guiado externo)</option>
-      <option value="lip">Liposoma-nano (menos toxicidad)</option>
+    <label>Tipo de nanorrobot</label>
+    <select id="type">
+      <option value="mag">Magneto-guiado (principal)</option>
+      <option value="lig">Ligandos (afinidad bioquímica)</option>
+      <option value="mix">Híbrido (mag + ligandos)</option>
     </select>
 
-    <label>Dosis (cantidad) <span class="val" id="vDose">220</span></label>
-    <input id="dose" type="range" min="50" max="450" step="1" value="220">
+    <label>Dosis (cantidad) <span class="val" id="vDose">240</span></label>
+    <input id="dose" type="range" min="80" max="520" step="1" value="240">
 
-    <label>Velocidad sangre (flujo) <span class="val" id="vFlow">1.4</span></label>
-    <input id="flow" type="range" min="0.5" max="2.8" step="0.1" value="1.4">
+    <label>Flujo sanguíneo (convección) <span class="val" id="vFlow">1.3</span></label>
+    <input id="flow" type="range" min="0.6" max="2.6" step="0.1" value="1.3">
 
-    <label>Direccionamiento al tumor <span class="val" id="vTarget">70</span></label>
-    <input id="target" type="range" min="0" max="100" step="1" value="70">
+    <label>Campo magnético (guía) <span class="val" id="vB">65</span></label>
+    <input id="B" type="range" min="0" max="100" step="1" value="65">
 
-    <label>Adhesión (afinidad) <span class="val" id="vBind">60</span></label>
-    <input id="bind" type="range" min="0" max="100" step="1" value="60">
+    <label>Permeabilidad BBB (apertura) <span class="val" id="vBBB">35</span></label>
+    <input id="bbb" type="range" min="0" max="100" step="1" value="35">
 
-    <label>Activación local (libera en tumor) <span class="val" id="vAct">55</span></label>
-    <input id="act" type="range" min="0" max="100" step="1" value="55">
+    <label>Pulsos de activación (liberar en tumor) <span class="val" id="vPulse">50</span></label>
+    <input id="pulse" type="range" min="0" max="100" step="1" value="50">
 
-    <label>Liberación fuera objetivo (toxicidad) <span class="val" id="vOff">18</span></label>
-    <input id="off" type="range" min="0" max="100" step="1" value="18">
+    <label>Liberación en tumor (k_release) <span class="val" id="vRel">55</span></label>
+    <input id="rel" type="range" min="0" max="100" step="1" value="55">
+
+    <label>Fuga fuera del objetivo (off-target) <span class="val" id="vLeak">18</span></label>
+    <input id="leak" type="range" min="0" max="100" step="1" value="18">
 
     <label>Aclaramiento (hígado/riñón) <span class="val" id="vClear">25</span></label>
     <input id="clear" type="range" min="0" max="100" step="1" value="25">
@@ -85,49 +83,74 @@
       <button id="reset">🔄 Reiniciar</button>
     </div>
 
-    <div class="kpiGrid">
-      <div class="kpi"><div>% que llega al tumor</div><b id="kReach">0%</b></div>
-      <div class="kpi"><div>Fármaco en tumor</div><b id="kDoseTum">0.0</b></div>
-      <div class="kpi"><div>Toxicidad fuera objetivo</div><b id="kTox">0%</b></div>
-      <div class="kpi"><div>Actividad tumoral</div><b id="kTum">85%</b></div>
+    <div class="kpis">
+      <div class="kpi"><div>% llega al tumor</div><b id="kReach">0%</b></div>
+      <div class="kpi"><div>AUC tumor (sim.)</div><b id="kAUCT">0.0</b></div>
+      <div class="kpi"><div>Exposición sana</div><b id="kTox">0%</b></div>
+      <div class="kpi"><div>Control tumoral</div><b id="kCtrl">85%</b></div>
     </div>
 
-    <div class="hint" id="status" style="margin-top:10px;">Estado: esperando inyección.</div>
+    <div class="hint" id="status" style="margin-top:10px">Estado: esperando inyección.</div>
 
     <div class="legend">
-      <span class="pill">Azul</span> nanorobots cargados · <span class="pill">Amarillo</span> descargados ·
-      <span class="pill">Círculo</span> tumor · Heatmap: brillo = concentración
+      <span class="pill">Azul</span> nanorrobots con fármaco ·
+      <span class="pill">Amarillo</span> descargados ·
+      <span class="pill">BBB</span> barrera ·
+      Heatmap: brillo = fármaco en tumor
     </div>
   </aside>
 
-  <main class="stage">
-    <canvas id="cv" width="1200" height="640"></canvas>
-    <canvas id="ch" width="1200" height="170" style="margin-top:10px;"></canvas>
+  <main>
+    <canvas id="cv" width="1200" height="720"></canvas>
   </main>
 </div>
 
 <script>
-const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
-const ch=document.getElementById("ch"), cctx=ch.getContext("2d");
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
 
-const ui={
-  carrier:carrier,dose:dose,flow:flow,target:target,bind:bind,act:act,off:off,clear:clear,
-  inject:inject,boost:boost,reset:reset,
-  kReach:kReach,kDoseTum:kDoseTum,kTox:kTox,kTum:kTum,status:status,
-  vDose:vDose,vFlow:vFlow,vTarget:vTarget,vBind:vBind,vAct:vAct,vOff:vOff,vClear:vClear
+const ui = {
+  type: type, dose:dose, flow:flow, B:B, bbb:bbb, pulse:pulse, rel:rel, leak:leak, clear:clear,
+  vDose:vDose, vFlow:vFlow, vB:vB, vBBB:vBBB, vPulse:vPulse, vRel:vRel, vLeak:vLeak, vClear:vClear,
+  inject:inject, boost:boost, reset:reset,
+  kReach:kReach, kAUCT:kAUCT, kTox:kTox, kCtrl:kCtrl, status:status
 };
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const rand=(a,b)=>a+Math.random()*(b-a);
 
-// Escena: vaso sanguíneo + tumor
-const vessel={x:70,y:130,w:cv.width-140,h:250,r:26};
-const tumor={x:cv.width-260,y:460,r:85};
+function sync(){
+  ui.vDose.textContent=ui.dose.value;
+  ui.vFlow.textContent=ui.flow.value;
+  ui.vB.textContent=ui.B.value;
+  ui.vBBB.textContent=ui.bbb.value;
+  ui.vPulse.textContent=ui.pulse.value;
+  ui.vRel.textContent=ui.rel.value;
+  ui.vLeak.textContent=ui.leak.value;
+  ui.vClear.textContent=ui.clear.value;
+}
+["input","change"].forEach(ev=>{
+  ui.dose.addEventListener(ev,sync);
+  ui.flow.addEventListener(ev,sync);
+  ui.B.addEventListener(ev,sync);
+  ui.bbb.addEventListener(ev,sync);
+  ui.pulse.addEventListener(ev,sync);
+  ui.rel.addEventListener(ev,sync);
+  ui.leak.addEventListener(ev,sync);
+  ui.clear.addEventListener(ev,sync);
+});
+sync();
 
-// Heatmap dentro tumor
-const HM=30;
-let hm=new Float32Array(HM*HM);
-const idx=(i,j)=>i*HM+j;
+// Zonas (sangre arriba, BBB en medio, tumor abajo)
+const blood = {x:70,y:110,w:cv.width-140,h:240,r:26};
+const bbbLineY = blood.y + blood.h + 35;
+const brain = {x:70,y:bbbLineY+25,w:cv.width-140,h:cv.height-(bbbLineY+45),r:26};
+const tumor = {x:cv.width-290, y:brain.y+brain.h*0.55, r:95};
+
+// Heatmap (tumor)
+const HM=32;
+let hm = new Float32Array(HM*HM);
+const hidx=(i,j)=>i*HM+j;
 
 function hmCell(x,y){
   const rx=(x-(tumor.x-tumor.r))/(tumor.r*2);
@@ -137,58 +160,43 @@ function hmCell(x,y){
   return {i,j};
 }
 
-// Nanorobots
-let bots=[];
-let total=0,reached=0;
-let drugTum=0,drugOff=0;
-let tumorAct=0.85;
-let t=0,hist=[];
-
+let bots=[], total=0, arrived=0;
+let aucTum=0, aucSano=0;
+let ctrl=85; // “control tumoral” (%), inicia alto como en tu panel
 let mode="idle"; // idle | inject | sim
-let injectT=0;
-
-// Animación: aguja + jeringa + émbolo
-let needle={x:220,y:-120, plunger:0}; // plunger 0..1
+let injT=0;
+let needle={x:200,y:-140, plunger:0};
 
 function typeMul(){
-  const c=ui.carrier.value;
-  if(c==="lig") return {target:1.28, bind:1.35, off:0.95, clear:1.05};
-  if(c==="mag") return {target:1.18, bind:1.05, off:1.10, clear:1.10};
-  return            {target:0.92, bind:0.86, off:0.70, clear:0.95};
-}
-
-function pushMetrics(reachPct=0,doseTum=0,tox=0,tumPct=85){
-  window.parent?.postMessage({
-    type:"NANO_METRICS",
-    payload:{ reachPct, doseTumor:doseTum, toxicity:tox, tumorPct:tumPct }
-  },"*");
+  const t=ui.type.value;
+  if(t==="mag") return {guide:1.2, bind:1.0, leak:1.0};
+  if(t==="lig") return {guide:0.85, bind:1.25, leak:0.95};
+  return {guide:1.15, bind:1.15, leak:1.05};
 }
 
 function resetAll(){
   bots=[]; hm.fill(0);
-  total=0; reached=0; drugTum=0; drugOff=0;
-  tumorAct=0.85; t=0; hist=[];
-  mode="idle"; injectT=0;
-  needle={x:220,y:-120, plunger:0};
+  total=0; arrived=0; aucTum=0; aucSano=0; ctrl=85;
+  mode="idle"; injT=0; needle={x:200,y:-140,plunger:0};
   ui.status.textContent="Estado: esperando inyección.";
+  pushMetrics(0,0,0,ctrl);
   ui.kReach.textContent="0%";
-  ui.kDoseTum.textContent="0.0";
+  ui.kAUCT.textContent="0.0";
   ui.kTox.textContent="0%";
-  ui.kTum.textContent="85%";
-  pushMetrics(0,0,0,85);
+  ui.kCtrl.textContent=ctrl+"%";
 }
 
 function spawn(mult=1){
-  const base=parseInt(ui.dose.value,10);
-  const n=Math.max(80, Math.floor(base*mult));
+  const n=Math.max(90, Math.floor(parseInt(ui.dose.value,10)*mult));
   total += n;
   for(let i=0;i<n;i++){
     bots.push({
-      x: vessel.x + rand(10,55),
-      y: vessel.y + rand(10,vessel.h-10),
+      x: blood.x + rand(10,60),
+      y: blood.y + rand(10,blood.h-10),
       vx:0,vy:0,
       drug:1.0,
-      bound:false,
+      crossed:false,
+      stuck:false,
       alive:true
     });
   }
@@ -197,144 +205,199 @@ function spawn(mult=1){
 function startInjection(){
   resetAll();
   mode="inject";
-  injectT=0;
-  spawn(1.0);
-  ui.status.textContent="💉 Inyección en curso: nanorobots entrando a la sangre…";
+  injT=0;
+  spawn(1);
+  ui.status.textContent="💉 Inyección IV: nanorrobots entrando al vaso sanguíneo…";
 }
 
 function flowField(y){
-  const center=vessel.y+vessel.h/2;
-  const R=vessel.h/2;
-  const d=(y-center);
+  const center=blood.y+blood.h/2;
+  const R=blood.h/2;
+  const d=y-center;
   const profile=clamp(1-(d*d)/(R*R),0,1);
   return profile * parseFloat(ui.flow.value);
 }
 
-function stepSim(dt){
+function pushMetrics(reachPct=0, doseTum=0, tox=0, ctrlPct=85){
+  // Mantiene el formato que usa tu index.html (NANO_METRICS)
+  window.parent?.postMessage({
+    type:"NANO_METRICS",
+    payload:{
+      reachPct: reachPct,
+      doseTumor: doseTum,   // aquí usamos AUC tumor simulada
+      toxicity: tox,        // exposición en tejido sano (0..100)
+      tumorPct: ctrlPct     // control tumoral (0..100)
+    }
+  },"*");
+}
+
+function step(dt){
   const M=typeMul();
-  const targeting=(parseFloat(ui.target.value)/100)*M.target;
-  const binding=(parseFloat(ui.bind.value)/100)*M.bind;
-  const act=(parseFloat(ui.act.value)/100);
-  const off=(parseFloat(ui.off.value)/100)*M.off;
-  const clear=(parseFloat(ui.clear.value)/100)*M.clear;
 
-  t += dt;
+  const B = (parseFloat(ui.B.value)/100) * M.guide;          // guía magnética
+  const BBB = (parseFloat(ui.bbb.value)/100);               // permeabilidad BBB
+  const pulse = (parseFloat(ui.pulse.value)/100);           // pulsos (cuándo)
+  const rel = (parseFloat(ui.rel.value)/100);               // cuánto libera
+  const leak = (parseFloat(ui.leak.value)/100) * M.leak;    // fuga fuera objetivo
+  const clear = (parseFloat(ui.clear.value)/100);           // aclaramiento
 
-  // heatmap decay
-  const hmDecay=clamp(0.06 + clear*0.06,0.03,0.22);
-  for(let k=0;k<hm.length;k++) hm[k]*=(1-hmDecay*dt);
+  // decaimiento heatmap
+  const hmDecay = clamp(0.08 + clear*0.10, 0.04, 0.28);
+  for(let k=0;k<hm.length;k++) hm[k] *= (1-hmDecay*dt);
 
-  // aclaramiento
-  const kill=clamp(clear*0.12*dt,0,0.10);
+  // prob de eliminación
+  const kill = clamp(clear*0.13*dt, 0, 0.10);
 
   for(const b of bots){
     if(!b.alive) continue;
     if(Math.random()<kill){ b.alive=false; continue; }
 
-    const v = flowField(b.y);
-    const brown=0.65;
+    // 1) Movimiento en sangre
+    if(!b.crossed){
+      const v = flowField(b.y);
+      const brown=0.6;
+      b.vx = v*3.1 + rand(-brown,brown);
+      b.vy = rand(-brown,brown);
 
-    b.vx = v*2.8 + rand(-brown,brown);
-    b.vy = rand(-brown,brown);
+      // guía magnética hacia “zona de cruce” cerca del tumor
+      const dx = tumor.x - b.x;
+      const dy = (bbbLineY+20) - b.y; // hacia BBB
+      const dist = Math.hypot(dx,dy)+1e-6;
 
-    // atracción al tumor cuando va avanzando
+      // se activa más cuando avanza en el vaso
+      const gate = clamp((b.x-(blood.x+blood.w*0.55))/(blood.w*0.45), 0, 1);
+      const pull = B * gate;
+
+      b.vx += (dx/dist)*pull*3.0;
+      b.vy += (dy/dist)*pull*3.0;
+
+      b.x += b.vx*70*dt;
+      b.y += b.vy*70*dt;
+
+      // paredes vaso
+      if(b.y < blood.y+6) b.y=blood.y+6;
+      if(b.y > blood.y+blood.h-6) b.y=blood.y+blood.h-6;
+
+      // recirculación
+      if(b.x > blood.x + blood.w + 60){
+        b.x = blood.x + rand(10,60);
+        b.y = blood.y + rand(10,blood.h-10);
+      }
+
+      // 2) Cruce de BBB (prob depende de BBB + guía)
+      const nearBBB = (b.y > blood.y + blood.h - 18) && (b.x > blood.x + blood.w*0.60);
+      if(nearBBB){
+        const pCross = clamp((0.02 + 0.28*BBB + 0.22*B) * dt * 6, 0, 0.55);
+        if(Math.random() < pCross){
+          b.crossed = true;
+          // aparece en “cerebro”
+          b.y = brain.y + rand(10,40);
+          b.x = clamp(b.x + rand(-10,10), brain.x+10, brain.x+brain.w-10);
+        }
+      }
+
+      // fuga fuera objetivo mientras circula (sistémica)
+      if(b.drug>0){
+        const out = Math.min(b.drug, leak*0.020);
+        b.drug -= out;
+        aucSano += out;
+      }
+      continue;
+    }
+
+    // 3) En cerebro (debajo BBB): mover hacia tumor
+    const brown=0.55;
     const dx=tumor.x-b.x, dy=tumor.y-b.y;
     const dist=Math.hypot(dx,dy)+1e-6;
-    const gate=clamp((b.x-(vessel.x+vessel.w*0.55))/(vessel.w*0.45),0,1);
-    const pull = targeting*0.95*gate;
 
-    b.vx += (dx/dist)*pull*3.6;
-    b.vy += (dy/dist)*pull*3.6;
+    const guideBrain = (0.6 + 1.2*B) * 0.8;
+    b.vx = (dx/dist)*guideBrain + rand(-brown,brown);
+    b.vy = (dy/dist)*guideBrain + rand(-brown,brown);
 
-    b.x += b.vx*72*dt;
-    b.y += b.vy*72*dt;
+    b.x += b.vx*55*dt;
+    b.y += b.vy*55*dt;
 
-    if(b.y < vessel.y+6) b.y=vessel.y+6;
-    if(b.y > vessel.y+vessel.h-6) b.y=vessel.y+vessel.h-6;
+    // límites cerebro
+    b.x = clamp(b.x, brain.x+8, brain.x+brain.w-8);
+    b.y = clamp(b.y, brain.y+8, brain.y+brain.h-8);
 
-    // recirculación
-    if(b.x > vessel.x+vessel.w+50){
-      b.x = vessel.x + rand(10,55);
-      b.y = vessel.y + rand(10,vessel.h-10);
+    // 4) Tumor: liberar con pulsos
+    const inTum = Math.hypot(b.x-tumor.x, b.y-tumor.y) < tumor.r;
+
+    if(inTum && !b.stuck){
+      b.stuck = true;
+      arrived++;
     }
 
-    // liberación fuera objetivo (toxicidad)
-    if(b.drug>0){
-      const out=Math.min(b.drug, off*0.020);
-      b.drug -= out;
-      drugOff += out;
-    }
-
-    const inTum = dist < tumor.r;
-
-    // adhesión
-    if(inTum && !b.bound){
-      const pBind = clamp(binding*0.70*dt,0,0.32);
-      if(Math.random()<pBind){ b.bound=true; reached++; }
-    }
-
-    // liberación en tumor (activación)
     if(inTum && b.drug>0){
-      const relRate = 0.020 + 0.040*act;
-      const rel=Math.min(b.drug, relRate*2.2);
-      b.drug -= rel;
-      drugTum += rel;
+      // pulsos = “ventana” de liberación
+      const pulseGate = (Math.sin(performance.now()/500) * 0.5 + 0.5); // 0..1
+      const pulseOn = (pulseGate < pulse); // si pulso alto, se activa más tiempo
 
-      // depositar en heatmap
-      const {i,j}=hmCell(b.x,b.y);
-      const cell=(tumor.r*2)/HM;
-      const cx=(tumor.x-tumor.r)+(j+0.5)*cell;
-      const cy=(tumor.y-tumor.r)+(i+0.5)*cell;
-      if((cx-tumor.x)**2+(cy-tumor.y)**2 <= tumor.r*tumor.r){
-        hm[idx(i,j)] += rel*2.2;
+      if(pulseOn){
+        const relRate = 0.010 + 0.050*rel;
+        const d = Math.min(b.drug, relRate*2.4);
+        b.drug -= d;
+        aucTum += d;
+
+        // heatmap
+        const {i,j}=hmCell(b.x,b.y);
+        const cell=(tumor.r*2)/HM;
+        const cx=(tumor.x-tumor.r)+(j+0.5)*cell;
+        const cy=(tumor.y-tumor.r)+(i+0.5)*cell;
+        if((cx-tumor.x)**2 + (cy-tumor.y)**2 <= tumor.r*tumor.r){
+          hm[hidx(i,j)] += d*2.4;
+        }
       }
     }
+
+    // pequeña fuga aún en cerebro
+    if(b.drug>0){
+      const out = Math.min(b.drug, leak*0.010);
+      b.drug -= out;
+      aucSano += out;
+    }
   }
 
-  // toxicidad 0..100
-  const denom=Math.max(1,total);
-  const tox = clamp((drugOff/denom)*5200,0,100);
+  // métricas
+  const reachPct = total>0 ? (arrived/total)*100 : 0;
+  const tox = clamp((aucSano/Math.max(1,total))*6000, 0, 100); // 0..100
 
-  // actividad tumoral disminuye por fármaco en tumor, empeora por tox
-  tumorAct = clamp(tumorAct - drugTum*0.00013 + tox*0.00005, 0.10, 0.99);
-
-  const reachPct = total>0 ? (reached/total)*100 : 0;
+  // “control tumoral”: sube con AUC tumor, baja con tox (súper fácil de entender)
+  const benefit = clamp(aucTum*0.035, 0, 70);
+  const harm = clamp(tox*0.35, 0, 50);
+  ctrl = clamp(35 + benefit - harm, 0, 100);
 
   ui.kReach.textContent = Math.round(reachPct)+"%";
-  ui.kDoseTum.textContent = drugTum.toFixed(1);
+  ui.kAUCT.textContent = aucTum.toFixed(1);
   ui.kTox.textContent = Math.round(tox)+"%";
-  ui.kTum.textContent = Math.round(tumorAct*100)+"%";
+  ui.kCtrl.textContent = Math.round(ctrl)+"%";
 
-  hist.push({t, tox, tumor: tumorAct*100});
-  hist = hist.filter(p => t - p.t <= 55);
-
-  // enviar a index.html
-  if(Math.floor(t*2) !== Math.floor((t-dt)*2)){
-    pushMetrics(reachPct, drugTum, tox, tumorAct*100);
-  }
+  // mandar al index (2 veces por segundo aprox)
+  pushMetrics(reachPct, aucTum, tox, ctrl);
 }
 
-function roundRect(c,x,y,w,h,r){
-  c.beginPath();
-  c.moveTo(x+r,y);
-  c.arcTo(x+w,y,x+w,y+h,r);
-  c.arcTo(x+w,y+h,x,y+h,r);
-  c.arcTo(x,y+h,x,y,r);
-  c.arcTo(x,y,x+w,y,r);
-  c.closePath();
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
 }
 
 function drawHeatmap(){
   const cell=(tumor.r*2)/HM;
-  const maxV=0.95;
+  const maxV=0.9;
   for(let i=0;i<HM;i++){
     for(let j=0;j<HM;j++){
-      const v=hm[idx(i,j)];
+      const v=hm[hidx(i,j)];
       if(v<0.002) continue;
       const x=(tumor.x-tumor.r)+j*cell;
       const y=(tumor.y-tumor.r)+i*cell;
       const cx=x+cell/2, cy=y+cell/2;
-      if((cx-tumor.x)**2+(cy-tumor.y)**2 > tumor.r*tumor.r) continue;
+      if((cx-tumor.x)**2 + (cy-tumor.y)**2 > tumor.r*tumor.r) continue;
       const a=clamp(v/maxV,0,1);
       ctx.fillStyle=`rgba(${Math.round(255*a)},${Math.round(210*a)},${Math.round(70*a)},${0.30*a})`;
       ctx.fillRect(x,y,cell,cell);
@@ -343,77 +406,89 @@ function drawHeatmap(){
 }
 
 function drawNeedle(){
-  // aguja + jeringa + émbolo (plunger)
   const x=needle.x, y=needle.y;
 
-  // cuerpo jeringa
+  // jeringa
   ctx.fillStyle="rgba(255,255,255,.85)";
-  ctx.fillRect(x-22, y-40, 80, 28);
+  ctx.fillRect(x-20, y-30, 85, 24);
 
-  // émbolo (se mueve)
+  // émbolo
   ctx.fillStyle="rgba(233,236,255,.85)";
-  ctx.fillRect(x-20 + needle.plunger*42, y-38, 10, 24);
+  ctx.fillRect(x-18 + needle.plunger*46, y-28, 10, 20);
 
   // tubo
   ctx.fillStyle="rgba(255,255,255,.92)";
-  ctx.fillRect(x+10, y-12, 14, 160);
+  ctx.fillRect(x+14, y-8, 14, 150);
 
-  // aletas
+  // agarre
   ctx.fillStyle="rgba(255,255,255,.70)";
-  ctx.fillRect(x-5, y+40, 44, 18);
+  ctx.fillRect(x, y+40, 44, 18);
 
-  // punta aguja
+  // punta
   ctx.fillStyle="rgba(251,191,36,.90)";
   ctx.beginPath();
-  ctx.moveTo(x+17, y+148);
-  ctx.lineTo(x+32, y+178);
-  ctx.lineTo(x+2,  y+178);
+  ctx.moveTo(x+21, y+138);
+  ctx.lineTo(x+36, y+170);
+  ctx.lineTo(x+6,  y+170);
   ctx.closePath();
   ctx.fill();
 
-  // texto
-  ctx.fillStyle="rgba(233,236,255,.88)";
+  // “bolo” entrando al vaso
+  ctx.fillStyle="rgba(56,189,248,.85)";
+  ctx.beginPath();
+  ctx.arc(x+21, y+172, 7, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="rgba(233,236,255,.85)";
   ctx.font="bold 14px Arial";
-  ctx.fillText("Inyección IV", x+50, y+10);
+  ctx.fillText("Inyección IV", x+60, y-10);
 }
 
-function drawScene(){
+function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
 
+  // fondo
   const g=ctx.createLinearGradient(0,0,0,cv.height);
-  g.addColorStop(0,"#000");
-  g.addColorStop(1,"#020617");
+  g.addColorStop(0,"#000"); g.addColorStop(1,"#020617");
   ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
 
-  // título
+  // títulos
   ctx.fillStyle="rgba(233,236,255,.92)";
   ctx.font="bold 20px Arial";
-  ctx.fillText("Nanorobots: inyección IV → flujo sanguíneo → tumor → liberación", 18, 30);
+  ctx.fillText("Sangre → BBB → Tumor cerebral (guía magnética + liberación controlada)", 18, 34);
   ctx.font="13px Arial";
   ctx.fillStyle="rgba(233,236,255,.70)";
-  ctx.fillText("Ajusta los sliders y mira el heatmap + métricas + gráfica.", 18, 52);
+  ctx.fillText("Azul: con fármaco • Amarillo: descargados • Heatmap: fármaco en tumor", 18, 56);
 
-  // vaso sanguíneo
-  roundRect(ctx, vessel.x, vessel.y, vessel.w, vessel.h, vessel.r);
-  ctx.fillStyle="rgba(148,163,184,.08)";
-  ctx.fill();
-  ctx.strokeStyle="rgba(56,189,248,.25)";
-  ctx.lineWidth=2; ctx.stroke();
+  // sangre (vaso)
+  roundRect(blood.x,blood.y,blood.w,blood.h,blood.r);
+  ctx.fillStyle="rgba(148,163,184,.08)"; ctx.fill();
+  ctx.strokeStyle="rgba(56,189,248,.25)"; ctx.lineWidth=2; ctx.stroke();
 
-  // líneas flujo
-  ctx.strokeStyle="rgba(56,189,248,.10)";
-  ctx.lineWidth=1;
-  for(let i=0;i<7;i++){
-    const yy=vessel.y+(i+1)*(vessel.h/8);
-    ctx.beginPath(); ctx.moveTo(vessel.x+12,yy); ctx.lineTo(vessel.x+vessel.w-12,yy); ctx.stroke();
-  }
+  // BBB
+  ctx.strokeStyle="rgba(255,255,255,.25)";
+  ctx.setLineDash([8,8]);
+  ctx.beginPath();
+  ctx.moveTo(80, bbbLineY);
+  ctx.lineTo(cv.width-80, bbbLineY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle="rgba(233,236,255,.75)";
+  ctx.font="bold 13px Arial";
+  ctx.fillText("BBB (barrera hematoencefálica)", 90, bbbLineY-10);
+
+  // cerebro
+  roundRect(brain.x,brain.y,brain.w,brain.h,brain.r);
+  ctx.fillStyle="rgba(167,139,250,.07)"; ctx.fill();
+  ctx.strokeStyle="rgba(167,139,250,.20)"; ctx.lineWidth=2; ctx.stroke();
 
   // tumor halo + heatmap
-  const halo=ctx.createRadialGradient(tumor.x,tumor.y,10,tumor.x,tumor.y,tumor.r*2.2);
-  halo.addColorStop(0,"rgba(167,139,250,.18)");
+  const halo=ctx.createRadialGradient(tumor.x,tumor.y,10,tumor.x,tumor.y,tumor.r*2.3);
+  halo.addColorStop(0,"rgba(167,139,250,.16)");
   halo.addColorStop(1,"rgba(167,139,250,0)");
   ctx.fillStyle=halo;
-  ctx.beginPath(); ctx.arc(tumor.x,tumor.y,tumor.r*2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(tumor.x,tumor.y,tumor.r*2.3,0,Math.PI*2); ctx.fill();
 
   drawHeatmap();
 
@@ -421,120 +496,58 @@ function drawScene(){
   ctx.fillStyle="rgba(167,139,250,.12)"; ctx.fill();
   ctx.lineWidth=6; ctx.strokeStyle="rgba(56,189,248,.45)"; ctx.stroke();
 
-  // núcleo (actividad tumoral) más visible si tumorAct alto
-  ctx.beginPath(); ctx.arc(tumor.x,tumor.y,tumor.r*0.55,0,Math.PI*2);
-  ctx.fillStyle=`rgba(251,191,36,${clamp(tumorAct-0.15,0.10,0.50)})`;
-  ctx.fill();
-
-  // nanorobots
+  // bots
   for(const b of bots){
     if(!b.alive) continue;
     const loaded=b.drug>0.6;
-    ctx.fillStyle= loaded ? "rgba(56,189,248,.92)" : "rgba(251,191,36,.92)";
+    ctx.fillStyle = loaded ? "rgba(56,189,248,.92)" : "rgba(251,191,36,.92)";
     ctx.beginPath();
-    ctx.arc(b.x,b.y, b.bound?3.8:3.0, 0, Math.PI*2);
+    ctx.arc(b.x,b.y, b.stuck?3.9:3.0, 0, Math.PI*2);
     ctx.fill();
   }
 
-  if(mode==="inject"){
-    drawNeedle();
-  }
+  // aguja
+  if(mode==="inject") drawNeedle();
 }
 
-function drawChart(){
-  cctx.clearRect(0,0,ch.width,ch.height);
-  cctx.fillStyle="#000"; cctx.fillRect(0,0,ch.width,ch.height);
-  cctx.strokeStyle="rgba(255,255,255,.10)";
-  cctx.strokeRect(0,0,ch.width,ch.height);
-
-  cctx.fillStyle="rgba(233,236,255,.75)";
-  cctx.font="12px Arial";
-  cctx.fillText("Actividad tumoral % (morado) y Toxicidad % (amarillo) en el tiempo (últimos 55s)", 10, 18);
-
-  if(hist.length<2) return;
-
-  const t0=hist[0].t, t1=hist[hist.length-1].t;
-  const X=(tt)=>10 + ((tt-t0)/Math.max(0.0001,(t1-t0)))*(ch.width-20);
-  const Y=(v)=>ch.height-16 - (v/100)*(ch.height-36);
-
-  // tumor
-  cctx.strokeStyle="rgba(167,139,250,.95)";
-  cctx.lineWidth=2;
-  cctx.beginPath();
-  hist.forEach((p,i)=>{const x=X(p.t), y=Y(p.tumor); if(i===0)cctx.moveTo(x,y); else cctx.lineTo(x,y);});
-  cctx.stroke();
-
-  // tox
-  cctx.strokeStyle="rgba(251,191,36,.95)";
-  cctx.beginPath();
-  hist.forEach((p,i)=>{const x=X(p.t), y=Y(p.tox); if(i===0)cctx.moveTo(x,y); else cctx.lineTo(x,y);});
-  cctx.stroke();
-}
-
-// UI valores en vivo
-function syncLabels(){
-  ui.vDose.textContent = ui.dose.value;
-  ui.vFlow.textContent = ui.flow.value;
-  ui.vTarget.textContent = ui.target.value;
-  ui.vBind.textContent = ui.bind.value;
-  ui.vAct.textContent = ui.act.value;
-  ui.vOff.textContent = ui.off.value;
-  ui.vClear.textContent = ui.clear.value;
-}
-["input","change"].forEach(ev=>{
-  ui.dose.addEventListener(ev,syncLabels);
-  ui.flow.addEventListener(ev,syncLabels);
-  ui.target.addEventListener(ev,syncLabels);
-  ui.bind.addEventListener(ev,syncLabels);
-  ui.act.addEventListener(ev,syncLabels);
-  ui.off.addEventListener(ev,syncLabels);
-  ui.clear.addEventListener(ev,syncLabels);
-});
-syncLabels();
-
-// Loop
 let last=performance.now();
 function loop(now){
   const dt=clamp((now-last)/1000,0,0.05);
   last=now;
 
   if(mode==="inject"){
-    injectT += dt;
+    injT += dt;
+    const enter = Math.min(1, injT/1.1);
+    needle.y = -140 + enter*(blood.y+35);
+    needle.plunger = clamp((injT-0.55)/1.2, 0, 1);
 
-    // bajar aguja y empujar émbolo
-    const enter = Math.min(1, injectT/1.1);
-    needle.y = -120 + enter*(vessel.y+30);
-    needle.plunger = clamp((injectT-0.6)/1.2, 0, 1);
+    // durante inyección, mete más partículas “en bolo”
+    if(injT < 2.0 && Math.random()<0.30) spawn(0.06);
 
-    // alimentar nanorobots durante la inyección
-    if(injectT < 2.0 && Math.random()<0.30) spawn(0.06);
-
-    if(injectT >= 2.3){
+    if(injT >= 2.3){
       mode="sim";
       ui.status.textContent="✅ Inyección finalizada. Simulación activa.";
     }
   }
 
-  if(mode==="sim"){
-    stepSim(dt);
-  }
+  if(mode==="sim") step(dt);
 
-  drawScene();
-  drawChart();
-
+  draw();
   requestAnimationFrame(loop);
-}
 requestAnimationFrame(loop);
 
 // Botones
-ui.inject.onclick=()=> startInjection();
+ui.inject.onclick=()=>startInjection();
 ui.boost.onclick=()=>{
   if(mode==="idle") startInjection();
   spawn(0.35);
-  ui.status.textContent="➕ Refuerzo aplicado: más nanorobots circulando.";
+  ui.status.textContent="➕ Refuerzo aplicado (más nanorrobots).";
 };
-ui.reset.onclick=()=> resetAll();
+ui.reset.onclick=()=>resetAll();
 
+// Inicio
+resetAll();
 </script>
+</body
 </body>
 </html>
