@@ -1,84 +1,765 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Retina - Simulación Neuroprotectora</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Retina • Simulación realista (Control vs Tratamiento)</title>
 <style>
-body{margin:0;background:#060b18;color:#e8f0ff;font-family:Arial}
-#ui{position:absolute;left:10px;top:10px;width:300px;background:#0f172a;padding:12px;border-radius:12px}
-label{font-size:12px}
-canvas{display:block;margin-left:320px;background:#000;border-left:3px solid #38bdf8}
-button,select,input{width:100%;margin-top:6px}
+  :root{
+    --bg:#050814; --panel:#0f172a; --txt:#e9ecff; --mut:rgba(233,236,255,.72);
+    --b:rgba(255,255,255,.12); --acc:#38bdf8; --good:#22c55e; --warn:#fbbf24;
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial;background:var(--bg);color:var(--txt);overflow:hidden}
+  .wrap{display:grid;grid-template-columns:380px 1fr;height:100vh}
+  .panel{
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
+    border-right:1px solid var(--b);
+    padding:14px;
+    overflow:auto;
+  }
+  h2{margin:0 0 6px;font-size:18px}
+  .hint{font-size:12px;color:var(--mut);line-height:1.35;margin-bottom:10px}
+  label{display:block;margin:10px 0 6px;color:var(--mut);font-size:12px}
+  input[type="range"], select{width:100%}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  button{
+    flex:1;min-width:120px;border:1px solid var(--b);
+    background:rgba(255,255,255,.06);color:var(--txt);padding:10px;border-radius:12px;
+    cursor:pointer;font-weight:800
+  }
+  button.primary{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.12)}
+  button.on{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.12)}
+  .kpiGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .kpi{border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.25);border-radius:14px;padding:10px}
+  .kpi div{font-size:12px;color:var(--mut)}
+  .kpi b{font-size:18px}
+  .stage{padding:12px}
+  canvas{
+    width:100%;height:auto;display:block;border-radius:var(--r);
+    background:#000;border:2px solid rgba(56,189,248,.35)
+  }
+  .legend{margin-top:10px;font-size:12px;color:var(--mut);line-height:1.35}
+  .pill{display:inline-block;padding:5px 9px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);font-size:12px}
+  @media(max-width:980px){
+    body{overflow:auto}
+    .wrap{grid-template-columns:1fr;height:auto}
+  }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <aside class="panel">
+    <h2>Retina • Modelo realista</h2>
+    <div class="hint">
+      Comparación <b>Control vs Tratamiento</b> con flujo laminar, difusión, captación en retina, heatmap de concentración y fotorreceptores.<br>
+      Objetivo: <b>maximizar viabilidad</b> con <b>mínima irritación</b>.
+    </div>
 
-<div id="ui">
-<h3>Gotas neuroprotectoras</h3>
-<label>Vehículo</label>
-<select id="tipo">
-<option value="1">Liposoma</option>
-<option value="1.2">Magnético</option>
-<option value="1.5">Anticuerpo dirigido</option>
-</select>
+    <div class="pill">⬅️ Izquierda: Control</div>
+    <div class="pill" style="margin-left:6px;border-color:rgba(56,189,248,.35)">➡️ Derecha: Tratamiento (tus parámetros)</div>
 
-<label>Cantidad aplicada</label>
-<input type="range" id="cantidad" min="10" max="200" value="80">
+    <label>Vehículo (Tratamiento)</label>
+    <select id="carrier">
+      <option value="lip">Liposoma (baja irritación)</option>
+      <option value="mag">Guiado magnético (mejor targeting)</option>
+      <option value="lig">Ligando dirigido (alta afinidad)</option>
+    </select>
 
-<label>Direccionamiento</label>
-<input type="range" id="target" min="0" max="100" value="60">
+    <label>Dosis (mg/mL)</label>
+    <input id="dose" type="range" min="0.5" max="5.0" step="0.1" value="2.2">
 
-<label>Liberación fuera del objetivo</label>
-<input type="range" id="libre" min="0" max="100" value="20">
+    <label>Volumen aplicado (µL)</label>
+    <input id="vol" type="range" min="10" max="60" step="1" value="32">
 
-<button onclick="inyectar()">Inyectar gotas</button>
+    <label>Velocidad de flujo (rel.)</label>
+    <input id="flow" type="range" min="0.3" max="2.6" step="0.1" value="1.2">
+
+    <label>Direccionalidad (0–100)</label>
+    <input id="target" type="range" min="0" max="100" step="1" value="70">
+
+    <label>Permeabilidad a retina (0–100)</label>
+    <input id="perm" type="range" min="0" max="100" step="1" value="60">
+
+    <label>Liberación basal fuera del objetivo (0–100)</label>
+    <input id="off" type="range" min="0" max="100" step="1" value="18">
+
+    <label>Aclaramiento / drenaje (0–100)</label>
+    <input id="clear" type="range" min="0" max="100" step="1" value="25">
+
+    <div class="row">
+      <button id="act">🔆 Activación OFF</button>
+    </div>
+
+    <div class="row">
+      <button id="apply" class="primary">💧 Aplicar (iniciar)</button>
+      <button id="boost">➕ Refuerzo</button>
+      <button id="reset">🔄 Reiniciar</button>
+    </div>
+
+    <div class="kpiGrid">
+      <div class="kpi"><div>% llega a retina (Trat.)</div><b id="kReach">0%</b></div>
+      <div class="kpi"><div>Concentración en retina</div><b id="kDose">0.0</b></div>
+      <div class="kpi"><div>Irritación fuera objetivo</div><b id="kTox">0%</b></div>
+      <div class="kpi"><div>Viabilidad fotorreceptores</div><b id="kViab">70%</b></div>
+    </div>
+
+    <div class="hint" id="status" style="margin-top:10px;">
+      Pulsa <b>Aplicar</b>. Verás una animación inicial y luego el transporte realista con heatmap y fotorreceptores.
+    </div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="cv" width="1200" height="680"></canvas>
+    <canvas id="ch" width="1200" height="170" style="margin-top:10px;"></canvas>
+
+    <div class="legend">
+      <b>Heatmap</b>: concentración en retina (más brillante = más fármaco).<br>
+      <b>Puntos</b>: fotorreceptores (verde = sanos, rojo = daño). Gráfica: viabilidad Control vs Tratamiento + irritación.
+    </div>
+  </main>
 </div>
 
-<canvas id="cv" width="900" height="500"></canvas>
-
 <script>
-const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-let bots=[],tumor={x:650,y:250,r:70},size=100;
+/* ============================================================
+   SIM REALISTA + HEATMAP + FOTORRECEPTORES + COMPARACIÓN 2 PANEL
+   - Lado a lado: Control (fijo) vs Tratamiento (UI)
+   - Flujo laminar (campo) + difusión browniana
+   - Captación/binding y liberación en retina
+   - Heatmap por celdas dentro de retina
+   - Fotorreceptores con salud dinámica según concentración y toxicidad
+   - postMessage: manda métricas del Tratamiento al index.html
+============================================================ */
 
-function inyectar(){
- bots=[];
- const n=+cantidad.value;
- for(let i=0;i<n;i++){
-  bots.push({x:50,y:250+Math.random()*80-40,v:1+Math.random(),hit:false});
- }
+const cv = document.getElementById("cv"), ctx=cv.getContext("2d");
+const ch = document.getElementById("ch"), cctx=ch.getContext("2d");
+
+const ui = {
+  carrier:carrier, dose:dose, vol:vol, flow:flow, target:target, perm:perm, off:off, clear:clear,
+  act:act, apply:apply, boost:boost, reset:reset,
+  kReach:kReach, kDose:kDose, kTox:kTox, kViab:kViab, status:status
+};
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const rand=(a,b)=>a+Math.random()*(b-a);
+
+let externalOn=false;
+
+// Escena: se divide en 2 vistas (Control / Tratamiento)
+const pad=26;
+const viewW = (cv.width - pad*3)/2;
+const viewH = 470;
+
+const viewL = {x:pad, y:pad+44, w:viewW, h:viewH, name:"CONTROL"};
+const viewR = {x:pad*2+viewW, y:pad+44, w:viewW, h:viewH, name:"TRATAMIENTO"};
+
+// Geometría dentro de cada vista (coordenadas locales)
+function localGeometry(view){
+  const vessel = {x:view.x+28, y:view.y+60, w:view.w-56, h:200, r:22};
+  const retina = {x:view.x+view.w-140, y:view.y+view.h-105, r:68};
+  return {vessel, retina};
 }
 
-function loop(){
- ctx.clearRect(0,0,cv.width,cv.height);
- ctx.strokeStyle="#38bdf8";
- ctx.beginPath();ctx.arc(tumor.x,tumor.y,tumor.r,0,6.28);ctx.stroke();
+// Heatmap config
+const HM_N = 26; // resolución del heatmap (más alto = más pesado)
+function makeHeatmap(){
+  const a = new Float32Array(HM_N*HM_N);
+  return a;
+}
+function hmIndex(i,j){ return i*HM_N+j; }
 
- let hit=0;
- bots.forEach(b=>{
-  b.x+=b.v*(+tipo.value);
-  if(Math.hypot(b.x-tumor.x,b.y-tumor.y)<tumor.r) b.hit=true;
-  ctx.fillStyle=b.hit?"#22c55e":"#60a5fa";
-  ctx.beginPath();ctx.arc(b.x,b.y,3,0,6.28);ctx.fill();
-  if(b.hit) hit++;
- });
-
- size=Math.max(10,size-hit*0.02*(target.value/100));
- ctx.fillStyle="#22c55e";
- ctx.fillRect(10,460,size,10);
-
- window.parent.postMessage({
-  type:"NANO_METRICS",
-  payload:{
-   reachPct:hit/bots.length*100||0,
-   doseTumor:hit,
-   toxicity:libre.value,
-   tumorPct:size
+// Fotoreceptores
+function makePhotoreceptors(retina){
+  const cells=[];
+  const n=180;
+  for(let k=0;k<n;k++){
+    let x,y;
+    // dentro del círculo
+    for(let tries=0;tries<40;tries++){
+      x = retina.x + rand(-retina.r, retina.r);
+      y = retina.y + rand(-retina.r, retina.r);
+      if((x-retina.x)**2+(y-retina.y)**2 <= (retina.r*0.95)**2) break;
+    }
+    // salud inicial 0.70–0.85
+    cells.push({x,y,health:rand(0.70,0.85)});
   }
- },"*");
-
- requestAnimationFrame(loop);
+  return cells;
 }
-loop();
+
+// Clase simulación
+class Sim {
+  constructor(kind, view){
+    this.kind=kind; // "control" | "treat"
+    this.view=view;
+    const G = localGeometry(view);
+    this.vessel=G.vessel;
+    this.retina=G.retina;
+
+    this.P=[];              // partículas
+    this.total=0;
+    this.reached=0;
+    this.doseRet=0;
+    this.doseOff=0;
+
+    this.hm = makeHeatmap();
+    this.cells = makePhotoreceptors(this.retina);
+
+    this.t=0;
+    this.hist=[]; // {t, viab, tox}
+    this.mode="idle"; // idle | intro | sim
+    this.introT=0;
+    this.dropX = this.view.x + this.view.w*0.35;
+    this.dropY = -100;
+    this.introDone=false;
+  }
+
+  params(){
+    if(this.kind==="control"){
+      // Control: conservador, sin activación, menor targeting
+      return {
+        carrier:"lip",
+        doseMg:1.3,
+        voluL:26,
+        flow:1.0,
+        targeting:45,
+        perm:45,
+        off:22,
+        clear:30,
+        external:false
+      };
+    } else {
+      return {
+        carrier: ui.carrier.value,
+        doseMg: parseFloat(ui.dose.value),
+        voluL: parseInt(ui.vol.value,10),
+        flow: parseFloat(ui.flow.value),
+        targeting: parseFloat(ui.target.value),
+        perm: parseFloat(ui.perm.value),
+        off: parseFloat(ui.off.value),
+        clear: parseFloat(ui.clear.value),
+        external: externalOn
+      };
+    }
+  }
+
+  carrierMul(carrier){
+    if(carrier==="lip") return {targetMul:0.90, permMul:1.05, offMul:0.70, clearMul:0.95, actMul:1.05};
+    if(carrier==="mag") return {targetMul:1.20, permMul:0.95, offMul:1.05, clearMul:1.05, actMul:1.25};
+    return                {targetMul:1.35, permMul:1.10, offMul:0.90, clearMul:1.10, actMul:1.00};
+  }
+
+  reset(){
+    this.P=[];
+    this.total=0; this.reached=0;
+    this.doseRet=0; this.doseOff=0;
+    this.hm.fill(0);
+    this.cells.forEach(c=>c.health=rand(0.70,0.85));
+    this.t=0; this.hist=[];
+    this.mode="idle";
+    this.introT=0; this.introDone=false;
+    this.dropY = -100;
+  }
+
+  spawnCloud(mult=1){
+    const p = this.params();
+    const C = this.carrierMul(p.carrier);
+
+    const doseMg = p.doseMg;
+    const voluL = p.voluL;
+
+    const n = Math.max(90, Math.floor(doseMg*voluL*1.8*mult));
+    this.total += n;
+
+    for(let i=0;i<n;i++){
+      this.P.push({
+        x: this.vessel.x + rand(12, 60),
+        y: this.vessel.y + rand(10, this.vessel.h-10),
+        vx:0, vy:0,
+        drug: doseMg,
+        bound:false,
+        alive:true,
+        // afinidad (ligando puede unirse más)
+        bindBias: (p.carrier==="lig") ? rand(1.0,1.2) : rand(0.85,1.05)
+      });
+    }
+  }
+
+  start(){
+    this.reset();
+    this.mode="intro";
+    this.spawnCloud(1.0);
+  }
+
+  flowField(y, flow){
+    const centerY = this.vessel.y + this.vessel.h/2;
+    const R = this.vessel.h/2;
+    const d = (y-centerY);
+    const profile = clamp(1 - (d*d)/(R*R), 0, 1);
+    return profile * flow;
+  }
+
+  // Convertir punto (x,y) a coordenada heatmap (i,j) dentro de retina
+  hmCell(x,y){
+    const rx = (x - (this.retina.x - this.retina.r)) / (this.retina.r*2);
+    const ry = (y - (this.retina.y - this.retina.r)) / (this.retina.r*2);
+    const j = clamp(Math.floor(rx*HM_N), 0, HM_N-1);
+    const i = clamp(Math.floor(ry*HM_N), 0, HM_N-1);
+    return {i,j};
+  }
+
+  hmAt(x,y){
+    // sample simple del heatmap
+    const {i,j} = this.hmCell(x,y);
+    return this.hm[hmIndex(i,j)];
+  }
+
+  step(dt){
+    const p = this.params();
+    const C = this.carrierMul(p.carrier);
+
+    this.t += dt;
+
+    const targeting = (p.targeting/100) * C.targetMul;  // 0..~1.4
+    const perm = (p.perm/100) * C.permMul;
+    const offRel = (p.off/100) * C.offMul;
+    const clear = (p.clear/100) * C.clearMul;
+
+    const actBoost = p.external ? (0.55 * C.actMul) : 0;
+    const kill = clamp(clear * 0.10 * dt, 0, 0.08);
+
+    // Disipación del heatmap (difusión y limpieza)
+    const hmDecay = clamp(0.05 + clear*0.05, 0.03, 0.18);
+    for(let k=0;k<this.hm.length;k++){
+      this.hm[k] *= (1 - hmDecay*dt);
+    }
+
+    // Partículas
+    for(const b of this.P){
+      if(!b.alive) continue;
+      if(Math.random() < kill){ b.alive=false; continue; }
+
+      // flujo + difusión browniana
+      const vLam = this.flowField(b.y, p.flow);
+      const brown = 0.65;
+      b.vx = (vLam*2.4) + rand(-brown,brown);
+      b.vy = rand(-brown,brown);
+
+      // atracción hacia retina (al final del vaso)
+      const dxR = this.retina.x - b.x;
+      const dyR = this.retina.y - b.y;
+      const distR = Math.hypot(dxR,dyR)+1e-6;
+      const pullGate = clamp((b.x - (this.vessel.x + this.vessel.w*0.55)) / (this.vessel.w*0.45), 0, 1);
+      const pull = targeting * 0.95 * pullGate;
+
+      b.vx += (dxR/distR)*pull*3.2;
+      b.vy += (dyR/distR)*pull*3.2;
+
+      b.x += b.vx * 70 * dt;
+      b.y += b.vy * 70 * dt;
+
+      // límites del vaso
+      if(b.y < this.vessel.y+6){ b.y=this.vessel.y+6; b.vy*=-0.5; }
+      if(b.y > this.vessel.y+this.vessel.h-6){ b.y=this.vessel.y+this.vessel.h-6; b.vy*=-0.5; }
+
+      // recirculación
+      if(b.x > this.vessel.x+this.vessel.w+40){
+        b.x = this.vessel.x + rand(12, 60);
+        b.y = this.vessel.y + rand(10, this.vessel.h-10);
+      }
+
+      // liberación basal (fuera objetivo) -> irritación
+      if(b.drug > 0){
+        const out = Math.min(b.drug, offRel * 0.020);
+        b.drug -= out;
+        this.doseOff += out;
+      }
+
+      // retina
+      const inRet = distR < this.retina.r;
+
+      // binding/captación
+      if(inRet && !b.bound){
+        const bindProb = clamp(perm * 0.55 * dt * b.bindBias, 0, 0.28);
+        if(Math.random() < bindProb){
+          b.bound=true;
+          this.reached++;
+        }
+      }
+
+      // liberación local + depósito en heatmap
+      if(inRet && b.drug>0){
+        const localRate = (0.018*perm) + (0.022*actBoost);
+        const rel = Math.min(b.drug, localRate*2.6);
+        b.drug -= rel;
+        this.doseRet += rel;
+
+        // depositar en heatmap (solo dentro de retina)
+        const {i,j} = this.hmCell(b.x,b.y);
+        const idx = hmIndex(i,j);
+        this.hm[idx] += rel * 1.8; // escala educativa
+      }
+    }
+
+    // Toxicidad/irritación (educativo)
+    const denom = Math.max(1, this.total * p.doseMg);
+    const tox = clamp((this.doseOff/denom)*5200, 0, 100);
+
+    // Salud de fotorreceptores (depende de concentración local - irritación)
+    // Concentración local se obtiene del heatmap
+    let sumH=0;
+    for(const c of this.cells){
+      const conc = this.hmAt(c.x,c.y); // 0..+
+      // neuroprotección
+      const gain = conc * 0.00025;
+      // daño por irritación sistémica
+      const loss = (tox/100) * 0.00035;
+      c.health = clamp(c.health + gain - loss, 0.05, 0.99);
+      sumH += c.health;
+    }
+    const viab = sumH/this.cells.length;
+
+    // guardar historial
+    this.hist.push({t:this.t, viab:viab*100, tox});
+    this.hist = this.hist.filter(p => this.t - p.t <= 50);
+
+    return {tox, viab:viab*100};
+  }
+
+  // Intro: gota “cae” y entra al flujo
+  introStep(dt){
+    this.introT += dt;
+    // animación de gota
+    const enter = clamp(this.introT/1.2, 0, 1);
+    this.dropY = -80 + enter*(this.vessel.y+30+80);
+
+    if(this.introT < 1.8){
+      // alimentar nube progresivamente
+      if(Math.random()<0.28) this.spawnCloud(0.08);
+    } else {
+      this.mode="sim";
+      this.introDone=true;
+    }
+  }
+}
+
+const simC = new Sim("control", viewL);
+const simT = new Sim("treat", viewR);
+
+// global
+let running=false;
+
+// click zona “Saltar” (global)
+function inSkipButton(mx,my){
+  const x = cv.width-140, y=14, w=120, h=34;
+  return (mx>=x && mx<=x+w && my>=y && my<=y+h);
+}
+cv.addEventListener("click",(e)=>{
+  const r=cv.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(cv.width/r.width);
+  const my=(e.clientY-r.top)*(cv.height/r.height);
+  if(inSkipButton(mx,my)){
+    simC.mode="sim"; simT.mode="sim";
+    ui.status.textContent="⏭️ Intro saltada. Simulación en marcha.";
+  }
+});
+
+// render helpers
+function roundRect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+}
+
+function drawView(sim){
+  const v=sim.view;
+  const vessel=sim.vessel, retina=sim.retina;
+
+  // panel base
+  roundRect(ctx, v.x, v.y, v.w, v.h, 18);
+  ctx.fillStyle="rgba(255,255,255,.03)";
+  ctx.fill();
+  ctx.strokeStyle= sim.kind==="control" ? "rgba(255,255,255,.10)" : "rgba(56,189,248,.35)";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // etiqueta
+  ctx.fillStyle="rgba(233,236,255,.90)";
+  ctx.font="bold 14px Arial";
+  ctx.fillText(sim.kind==="control" ? "CONTROL" : "TRATAMIENTO", v.x+14, v.y+24);
+
+  // vaso
+  roundRect(ctx, vessel.x, vessel.y, vessel.w, vessel.h, vessel.r);
+  ctx.fillStyle="rgba(148,163,184,.08)";
+  ctx.fill();
+  ctx.strokeStyle="rgba(56,189,248,.22)";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // líneas de flujo
+  ctx.strokeStyle="rgba(56,189,248,.10)";
+  ctx.lineWidth=1;
+  for(let i=0;i<7;i++){
+    const yy = vessel.y + (i+1)*(vessel.h/8);
+    ctx.beginPath();
+    ctx.moveTo(vessel.x+12,yy);
+    ctx.lineTo(vessel.x+vessel.w-12,yy);
+    ctx.stroke();
+  }
+
+  // retina halo
+  const halo = ctx.createRadialGradient(retina.x, retina.y, 10, retina.x, retina.y, retina.r*2.1);
+  halo.addColorStop(0,"rgba(96,165,250,.18)");
+  halo.addColorStop(1,"rgba(96,165,250,0)");
+  ctx.fillStyle=halo;
+  ctx.beginPath(); ctx.arc(retina.x, retina.y, retina.r*2.1, 0, Math.PI*2); ctx.fill();
+
+  // heatmap (sobre retina)
+  drawHeatmap(sim);
+
+  // borde retina
+  ctx.beginPath();
+  ctx.arc(retina.x, retina.y, retina.r, 0, Math.PI*2);
+  ctx.fillStyle="rgba(96,165,250,.10)";
+  ctx.fill();
+  ctx.lineWidth=6;
+  ctx.strokeStyle= sim.kind==="control" ? "rgba(148,163,184,.35)" : "rgba(56,189,248,.55)";
+  ctx.stroke();
+
+  // fotorreceptores
+  for(const c of sim.cells){
+    const h=c.health;
+    // color: rojo (bajo) -> verde (alto)
+    const r = Math.round(220*(1-h) + 40*h);
+    const g = Math.round(60*(1-h) + 220*h);
+    const b = Math.round(60*(1-h) + 80*h);
+    ctx.fillStyle = `rgba(${r},${g},${b},0.95)`;
+    ctx.beginPath();
+    ctx.arc(c.x,c.y,2.1,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // partículas
+  for(const p of sim.P){
+    if(!p.alive) continue;
+    const loaded = p.drug>0.6;
+    ctx.fillStyle = loaded ? "rgba(56,189,248,.92)" : "rgba(251,191,36,.92)";
+    ctx.beginPath();
+    ctx.arc(p.x,p.y, p.bound?3.7:3.0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // texto mini de estado
+  const last = sim.hist.length ? sim.hist[sim.hist.length-1] : null;
+  if(last){
+    ctx.fillStyle="rgba(233,236,255,.70)";
+    ctx.font="12px Arial";
+    ctx.fillText(`Viabilidad: ${last.viab.toFixed(0)}%`, v.x+14, v.y+v.h-18);
+  }
+}
+
+function drawHeatmap(sim){
+  const retina=sim.retina;
+  const cellW = (retina.r*2)/HM_N;
+  const maxV = 0.85; // escala visual (sube/baja según necesites)
+  for(let i=0;i<HM_N;i++){
+    for(let j=0;j<HM_N;j++){
+      const v = sim.hm[hmIndex(i,j)];
+      if(v<=0.001) continue;
+
+      const x = (retina.x-retina.r) + j*cellW;
+      const y = (retina.y-retina.r) + i*cellW;
+
+      // solo dibujar dentro del círculo retina
+      const cx = x + cellW/2;
+      const cy = y + cellW/2;
+      if((cx-retina.x)**2+(cy-retina.y)**2 > retina.r*retina.r) continue;
+
+      // intensidad (amarillo/verde)
+      const a = clamp(v/maxV, 0, 1);
+      const rr = Math.round(255*(a));
+      const gg = Math.round(220*(a));
+      const bb = Math.round(60*(a));
+      ctx.fillStyle = `rgba(${rr},${gg},${bb},${0.30*a})`;
+      ctx.fillRect(x,y,cellW,cellW);
+    }
+  }
+}
+
+function drawHeader(){
+  ctx.fillStyle="rgba(233,236,255,.92)";
+  ctx.font="bold 20px Arial";
+  ctx.fillText("Aplicación de gotas neuroprotectoras • Control vs Tratamiento", 18, 28);
+
+  ctx.fillStyle="rgba(233,236,255,.70)";
+  ctx.font="13px Arial";
+  ctx.fillText("Heatmap de concentración + fotorreceptores (verde=mejor) + flujo laminar", 18, 50);
+
+  // botón saltar
+  ctx.fillStyle="rgba(255,255,255,.08)";
+  ctx.fillRect(cv.width-140, 14, 120, 34);
+  ctx.strokeStyle="rgba(255,255,255,.15)";
+  ctx.strokeRect(cv.width-140, 14, 120, 34);
+  ctx.fillStyle="rgba(233,236,255,.85)";
+  ctx.font="bold 14px Arial";
+  ctx.fillText("Saltar ▶", cv.width-108, 36);
+
+  if(externalOn){
+    ctx.fillStyle="rgba(251,191,36,.90)";
+    ctx.font="bold 14px Arial";
+    ctx.fillText("Activación local: ON (Tratamiento)", 18, 74);
+  }
+}
+
+function drawChart(){
+  cctx.clearRect(0,0,ch.width,ch.height);
+  cctx.fillStyle="#000";
+  cctx.fillRect(0,0,ch.width,ch.height);
+  cctx.strokeStyle="rgba(255,255,255,.10)";
+  cctx.strokeRect(0,0,ch.width,ch.height);
+
+  cctx.fillStyle="rgba(233,236,255,.75)";
+  cctx.font="12px Arial";
+  cctx.fillText("Viabilidad %: Control (gris) vs Tratamiento (azul)  |  Irritación % (amarillo, tratamiento)", 10, 18);
+
+  if(simT.hist.length<2 || simC.hist.length<2) return;
+
+  // usar el tiempo del tratamiento como referencia
+  const histT = simT.hist;
+  const t0=histT[0].t, t1=histT[histT.length-1].t;
+  const X=(tt)=>10 + ((tt-t0)/Math.max(0.0001,(t1-t0)))*(ch.width-20);
+  const Y=(v)=>ch.height-16 - (v/100)*(ch.height-36);
+
+  // Control viabilidad (gris)
+  cctx.strokeStyle="rgba(148,163,184,.90)";
+  cctx.lineWidth=2;
+  cctx.beginPath();
+  simC.hist.forEach((p,i)=>{
+    const x=X(p.t), y=Y(p.viab);
+    if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+  });
+  cctx.stroke();
+
+  // Tratamiento viabilidad (azul)
+  cctx.strokeStyle="rgba(56,189,248,.95)";
+  cctx.lineWidth=2;
+  cctx.beginPath();
+  simT.hist.forEach((p,i)=>{
+    const x=X(p.t), y=Y(p.viab);
+    if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+  });
+  cctx.stroke();
+
+  // Irritación tratamiento (amarillo)
+  cctx.strokeStyle="rgba(251,191,36,.95)";
+  cctx.beginPath();
+  simT.hist.forEach((p,i)=>{
+    const x=X(p.t), y=Y(p.tox);
+    if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+  });
+  cctx.stroke();
+}
+
+// Loop principal
+let last=performance.now();
+function loop(now){
+  const dt = clamp((now-last)/1000, 0, 0.05);
+  last=now;
+
+  // fondo
+  const g = ctx.createLinearGradient(0,0,0,cv.height);
+  g.addColorStop(0,"#000");
+  g.addColorStop(1,"#020617");
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,cv.width,cv.height);
+
+  drawHeader();
+
+  // intro / sim
+  if(running){
+    if(simC.mode==="intro") simC.introStep(dt);
+    if(simT.mode==="intro") simT.introStep(dt);
+
+    if(simC.mode==="sim") simC.step(dt);
+    if(simT.mode==="sim") {
+      const outT = simT.step(dt);
+
+      // KPIs en panel (del tratamiento)
+      const reachPct = simT.total>0 ? (simT.reached/simT.total)*100 : 0;
+      ui.kReach.textContent = `${Math.round(reachPct)}%`;
+      ui.kDose.textContent  = simT.doseRet.toFixed(1);
+      ui.kTox.textContent   = `${Math.round(outT.tox)}%`;
+      ui.kViab.textContent  = `${Math.round(outT.viab)}%`;
+
+      // postMessage al index.html (con tus keys)
+      if(Math.floor(simT.t*2) !== Math.floor((simT.t-dt)*2)){
+        window.parent?.postMessage({
+          type:"NANO_METRICS",
+          payload:{
+            reachPct: reachPct,
+            doseTumor: simT.doseRet,
+            toxicity: outT.tox,
+            tumorPct: outT.viab
+          }
+        }, "*");
+      }
+    }
+  }
+
+  // dibujar vistas
+  drawView(simC);
+  drawView(simT);
+
+  // chart
+  drawChart();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* UI */
+ui.apply.onclick=()=>{
+  simC.start();
+  simT.start();
+  running=true;
+  ui.status.textContent="💧 Aplicación iniciada. Observa Control vs Tratamiento.";
+};
+
+ui.boost.onclick=()=>{
+  if(!running){
+    ui.apply.click();
+    return;
+  }
+  simT.spawnCloud(0.45);
+  ui.status.textContent="➕ Refuerzo aplicado (Tratamiento). Aumenta concentración en retina.";
+};
+
+ui.reset.onclick=()=>{
+  simC.reset();
+  simT.reset();
+  running=false;
+  externalOn=false;
+  ui.act.textContent="🔆 Activación OFF";
+  ui.act.classList.remove("on");
+  ui.kReach.textContent="0%";
+  ui.kDose.textContent="0.0";
+  ui.kTox.textContent="0%";
+  ui.kViab.textContent="70%";
+  ui.status.textContent="Reiniciado. Pulsa Aplicar para iniciar.";
+};
+
+ui.act.onclick=()=>{
+  externalOn=!externalOn;
+  ui.act.textContent = externalOn ? "🔆 Activación ON" : "🔆 Activación OFF";
+  ui.act.classList.toggle("on", externalOn);
+  ui.status.textContent = externalOn
+    ? "🔆 Activación local ON: aumenta liberación en retina (solo tratamiento)."
+    : "Activación local OFF.";
+};
 </script>
 </body>
 </html>
