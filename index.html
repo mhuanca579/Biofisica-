@@ -1,115 +1,245 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-<title>Gotas neuroprotectoras para preservar fotorreceptores de la retina</title>
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nanorobots: liberación dirigida de fármacos en cáncer</title>
 <style>
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:#0b1020;
-  color:#e9ecff;
-  text-align:center;
-}
-header{
-  padding:22px 14px;
-  background:#111827;
-}
-h1{margin:0;font-size:22px;line-height:1.3}
-.wrap{padding:18px 12px 26px;}
-.sim-box{
-  width:92%;
-  max-width:1100px;
-  margin:16px auto;
-  border:3px solid #38bdf8;
-  border-radius:16px;
-  overflow:hidden;
-  background:#000;
-}
-iframe{width:100%;height:560px;border:0;}
-.report{
-  width:92%;
-  max-width:1100px;
-  margin:14px auto;
-  text-align:left;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:16px;
-  padding:14px;
-}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.kpi{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;}
-.kpi div{font-size:12px;opacity:.8}
-.kpi b{font-size:16px}
-ul{margin:10px 0 0;padding-left:18px}
-footer{padding:12px;background:#111827;font-size:13px;opacity:.8}
-@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}iframe{height:520px}}
+  :root{
+    --bg0:#040714; --bg1:#070b1f;
+    --card:rgba(255,255,255,.06);
+    --b:rgba(255,255,255,.12);
+    --txt:#ecf2ff; --mut:rgba(236,242,255,.72);
+    --acc:#38bdf8; --acc2:#a78bfa; --good:#22c55e; --warn:#fbbf24; --bad:#fb7185;
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Arial, system-ui, sans-serif; color:var(--txt);
+    background:radial-gradient(1200px 800px at 25% -10%, rgba(56,189,248,.18), transparent 55%),
+               radial-gradient(1000px 800px at 90% 0%, rgba(167,139,250,.16), transparent 55%),
+               linear-gradient(180deg,var(--bg0),var(--bg1));
+  }
+  header{
+    padding:22px 14px 16px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  }
+  .title{
+    max-width:1180px; margin:0 auto;
+    display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+  }
+  h1{margin:0; font-size:22px; line-height:1.25}
+  .sub{margin-top:6px; font-size:13px; color:var(--mut); line-height:1.35}
+  .badge{
+    display:inline-flex; gap:8px; align-items:center;
+    padding:8px 10px; border-radius:999px;
+    border:1px solid rgba(56,189,248,.35);
+    background:rgba(56,189,248,.10);
+    font-size:12px; color:var(--txt);
+  }
+  .wrap{max-width:1180px; margin:14px auto 26px; padding:0 12px;}
+  .grid{
+    display:grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap:14px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--b);
+    border-radius:var(--r);
+    overflow:hidden;
+    box-shadow: 0 18px 55px rgba(0,0,0,.35);
+  }
+  .cardHead{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:12px 14px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  }
+  .cardHead b{font-size:14px}
+  .cardHead span{font-size:12px; color:var(--mut)}
+  iframe{display:block;width:100%;height:610px;border:0;background:#000}
+  .pad{padding:14px}
+  .kpis{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .kpi{
+    padding:12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(0,0,0,.22);
+  }
+  .kpi .l{font-size:12px;color:var(--mut)}
+  .kpi .v{font-size:18px;font-weight:900;margin-top:4px}
+  .diag{
+    margin-top:12px;
+    padding:12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(0,0,0,.22);
+  }
+  .diag .t{font-weight:900;font-size:16px}
+  .diag .p{color:var(--mut);font-size:12px;line-height:1.4;margin-top:4px}
+  ul{margin:10px 0 0; padding-left:18px; line-height:1.55}
+  .tip{
+    margin-top:10px;
+    font-weight:800;
+  }
+  .footer{
+    max-width:1180px; margin:0 auto; padding:10px 12px 22px;
+    color:rgba(236,242,255,.55); font-size:12px; line-height:1.35;
+  }
+  .pill{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    font-size:12px;
+    color:var(--mut);
+    margin-right:6px;
+  }
+  @media(max-width:980px){
+    .grid{grid-template-columns:1fr}
+    iframe{height:660px}
+  }
 </style>
 </head>
-
 <body>
 <header>
-<h1>Gotas neuroprotectoras para preservar fotorreceptores de la retina</h1>
-<p style="opacity:.8;font-size:13px">Simulación interactiva con conclusiones automáticas</p>
+  <div class="title">
+    <div>
+      <h1>Nanorobots para liberación dirigida de fármacos contra el cáncer</h1>
+      <div class="sub">
+        Simulación educativa: <b>inyección intravenosa</b> → transporte por flujo → <b>direccionamiento</b> → unión al tumor →
+        liberación controlada → evaluación de <b>eficacia</b> y <b>efectos secundarios</b>.
+      </div>
+    </div>
+    <div class="badge">🧬 Biofísica • Modelo interactivo</div>
+  </div>
 </header>
 
 <div class="wrap">
-<div class="sim-box">
-<iframe src="./juegos/nanorobots.html?v=2026"></iframe>
+  <div class="grid">
+    <!-- SIM -->
+    <div class="card">
+      <div class="cardHead">
+        <b>Simulación central</b>
+        <span>Ajusta parámetros → observa en vivo</span>
+      </div>
+      <iframe id="sim" src="./juegos/nanorobots.html?v=2026"></iframe>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div class="card">
+      <div class="cardHead">
+        <b>Resultados y conclusiones automáticas</b>
+        <span>se actualiza en tiempo real</span>
+      </div>
+
+      <div class="pad">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="l">% de nanorobots que alcanzan el tumor</div>
+            <div class="v" id="r_reach">--</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Fármaco liberado en tumor (rel.)</div>
+            <div class="v" id="r_dose">--</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Efectos fuera del objetivo</div>
+            <div class="v" id="r_tox">--</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Respuesta del tumor (↓ mejor)</div>
+            <div class="v" id="r_tumor">--</div>
+          </div>
+        </div>
+
+        <div class="diag">
+          <div class="t" id="r_diag">Esperando datos de la simulación…</div>
+          <div class="p" id="r_desc">Inicia la simulación para generar métricas y conclusiones.</div>
+          <ul id="r_points">
+            <li>Consejos aparecerán aquí.</li>
+          </ul>
+          <div class="tip" id="r_tip"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <span class="pill">📌 Consejo</span>
+          <span style="color:var(--mut);font-size:12px">Si quieres máxima eficacia, sube direccionamiento y activación local; si sube toxicidad, baja liberación basal.</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="report">
-<h2>Conclusiones automáticas</h2>
-
-<div class="grid">
-<div class="kpi"><div>Alcance al objetivo</div><b id="r_reach">--</b></div>
-<div class="kpi"><div>Dosis en retina</div><b id="r_dose">--</b></div>
-<div class="kpi"><div>Efectos fuera del objetivo</div><b id="r_tox">--</b></div>
-<div class="kpi"><div>Viabilidad de fotorreceptores</div><b id="r_tumor">--</b></div>
+<div class="footer">
+  Nota: modelo educativo (no clínico). Variables simplificadas para ilustrar principios: flujo, difusión, afinidad, liberación y aclaramiento.
 </div>
-
-<p id="r_diag" style="font-weight:900;margin-top:12px">Esperando datos...</p>
-<ul id="r_points"></ul>
-<p id="r_tip" style="font-weight:700"></p>
-</div>
-</div>
-
-<footer>Proyecto de Biofísica • 2026</footer>
 
 <script>
-const el=id=>document.getElementById(id);
+  const el = (id)=>document.getElementById(id);
 
-window.addEventListener("message",e=>{
- if(!e.data||e.data.type!=="NANO_METRICS")return;
- const m=e.data.payload;
- el("r_reach").textContent=m.reachPct.toFixed(0)+"%";
- el("r_dose").textContent=m.doseTumor.toFixed(1);
- el("r_tox").textContent=m.toxicity.toFixed(0)+"%";
- el("r_tumor").textContent=m.tumorPct.toFixed(0)+"%";
+  function conclusions(m){
+    const reach = m.reachPct;      // %
+    const doseT = m.doseTumor;     // rel
+    const tox   = m.toxicity;      // %
+    const tumor = m.tumorPct;      // "tamaño/actividad" %
 
- let diag="🟨 Mejorable";
- if(m.tumorPct>80&&m.toxicity<30)diag="✅ Excelente neuroprotección";
- else if(m.tumorPct>65&&m.toxicity<50)diag="🟦 Buena respuesta terapéutica";
- else if(m.toxicity>70)diag="⚠️ Efectos adversos elevados";
+    let diag="🟨 Mejorable";
+    let desc="Optimiza direccionamiento y liberación para mejorar la entrega tumoral con baja toxicidad.";
 
- el("r_diag").textContent=diag;
- const pts=[];
- if(m.reachPct<55)pts.push("La llegada a la retina es baja.");
- else pts.push("Buena llegada del fármaco al tejido objetivo.");
+    if(tumor <= 45 && tox <= 30) { diag="✅ Excelente"; desc="Alta eficacia y efectos secundarios bajos."; }
+    else if(tumor <= 60 && tox <= 50) { diag="🟦 Bueno"; desc="Eficaz con efectos secundarios moderados."; }
+    else if(tox > 70) { diag="⚠️ Riesgoso"; desc="Demasiada liberación fuera del objetivo (toxicidad alta)."; }
+    else if(reach < 35) { diag="🟧 Baja llegada"; desc="Poca entrega tumoral: el fármaco no llega suficiente al objetivo."; }
 
- if(m.doseTumor<100)pts.push("La dosis neuroprotectora es limitada.");
- else pts.push("Dosis efectiva en retina.");
+    const pts=[];
+    if(reach >= 55) pts.push(`Llegada tumoral aceptable (${reach.toFixed(0)}%).`);
+    else pts.push(`Llegada tumoral baja (${reach.toFixed(0)}%). Aumenta targeting o reduce aclaramiento.`);
 
- if(m.toxicity>50)pts.push("Existe liberación no dirigida significativa.");
- else pts.push("Efectos fuera del objetivo controlados.");
+    if(doseT >= 120) pts.push(`Liberación en tumor alta (${doseT.toFixed(1)}): favorece respuesta terapéutica.`);
+    else pts.push(`Liberación en tumor limitada (${doseT.toFixed(1)}). Sube activación local o dosis.`);
 
- el("r_points").innerHTML=pts.map(p=>"<li>"+p+"</li>").join("");
- el("r_tip").textContent="Recomendación: optimizar direccionamiento y activación local.";
-});
+    if(tox <= 35) pts.push(`Efectos fuera del objetivo controlados (${tox.toFixed(0)}%).`);
+    else pts.push(`Efectos fuera del objetivo elevados (${tox.toFixed(0)}%). Baja liberación basal y aumenta selectividad.`);
+
+    let tip="Recomendación: ";
+    if(tox > 55) tip += "reduce liberación basal y usa activación local para concentrar el fármaco en el tumor.";
+    else if(reach < 50) tip += "sube direccionamiento (ligandos/magnetismo) o baja aclaramiento para mejorar llegada tumoral.";
+    else tip += "ajusta fino: un poco más de activación y un poco menos de liberación basal.";
+
+    return {diag,desc,pts,tip};
+  }
+
+  window.addEventListener("message",(e)=>{
+    const d=e.data;
+    if(!d || d.type!=="NANO_METRICS") return;
+    const m=d.payload;
+
+    el("r_reach").textContent = m.reachPct.toFixed(0)+"%";
+    el("r_dose").textContent  = m.doseTumor.toFixed(1);
+    el("r_tox").textContent   = m.toxicity.toFixed(0)+"%";
+    el("r_tumor").textContent = m.tumorPct.toFixed(0)+"%";
+
+    const out=conclusions(m);
+    el("r_diag").textContent=out.diag;
+    el("r_desc").textContent=out.desc;
+
+    const ul=el("r_points");
+    ul.innerHTML="";
+    out.pts.forEach(p=>{
+      const li=document.createElement("li");
+      li.textContent=p;
+      ul.appendChild(li);
+    });
+    el("r_tip").textContent=out.tip;
+  });
 </script>
 </body>
 </html>
-
