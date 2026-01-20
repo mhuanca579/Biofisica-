@@ -2,64 +2,113 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Nanorobots contra el Cáncer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Gotas neuroprotectoras para preservar fotorreceptores de la retina</title>
 
 <style>
 body{
   margin:0;
-  font-family: Arial, sans-serif;
+  font-family:Arial, sans-serif;
   background:#0b1020;
-  color:white;
+  color:#e9ecff;
   text-align:center;
 }
 header{
-  padding:20px;
+  padding:22px 14px;
   background:#111827;
 }
-h1{margin:0;}
-.section{
-  padding:20px;
-}
+h1{margin:0;font-size:22px;line-height:1.3}
+.wrap{padding:18px 12px 26px;}
 .sim-box{
-  width:90%;
-  max-width:1000px;
-  margin:20px auto;
+  width:92%;
+  max-width:1100px;
+  margin:16px auto;
   border:3px solid #38bdf8;
-  border-radius:15px;
+  border-radius:16px;
   overflow:hidden;
+  background:#000;
 }
-iframe{
-  width:100%;
-  height:500px;
-  border:0;
+iframe{width:100%;height:560px;border:0;}
+.report{
+  width:92%;
+  max-width:1100px;
+  margin:14px auto;
+  text-align:left;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  padding:14px;
 }
-footer{
-  padding:10px;
-  background:#111827;
-  font-size:13px;
-}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.kpi{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;}
+.kpi div{font-size:12px;opacity:.8}
+.kpi b{font-size:16px}
+ul{margin:10px 0 0;padding-left:18px}
+footer{padding:12px;background:#111827;font-size:13px;opacity:.8}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}iframe{height:520px}}
 </style>
 </head>
 
 <body>
-
 <header>
-<h1>Nanorobots para la liberación dirigida de fármacos contra el cáncer</h1>
+<h1>Gotas neuroprotectoras para preservar fotorreceptores de la retina</h1>
+<p style="opacity:.8;font-size:13px">Simulación interactiva con conclusiones automáticas</p>
 </header>
 
-<div class="section">
-<p>Simulación interactiva de nanomedicina.</p>
-
+<div class="wrap">
 <div class="sim-box">
-  <iframe src="./juegos/nanorobots.html"></iframe>
+<iframe src="./juegos/nanorobots.html"></iframe>
 </div>
 
+<div class="report">
+<h2>Conclusiones automáticas</h2>
+
+<div class="grid">
+<div class="kpi"><div>Alcance al objetivo</div><b id="r_reach">--</b></div>
+<div class="kpi"><div>Dosis en retina</div><b id="r_dose">--</b></div>
+<div class="kpi"><div>Efectos fuera del objetivo</div><b id="r_tox">--</b></div>
+<div class="kpi"><div>Viabilidad de fotorreceptores</div><b id="r_tumor">--</b></div>
 </div>
 
-<footer>
-Proyecto escolar - 2026
-</footer>
+<p id="r_diag" style="font-weight:900;margin-top:12px">Esperando datos...</p>
+<ul id="r_points"></ul>
+<p id="r_tip" style="font-weight:700"></p>
+</div>
+</div>
 
+<footer>Proyecto de Biofísica • 2026</footer>
+
+<script>
+const el=id=>document.getElementById(id);
+
+window.addEventListener("message",e=>{
+ if(!e.data||e.data.type!=="NANO_METRICS")return;
+ const m=e.data.payload;
+ el("r_reach").textContent=m.reachPct.toFixed(0)+"%";
+ el("r_dose").textContent=m.doseTumor.toFixed(1);
+ el("r_tox").textContent=m.toxicity.toFixed(0)+"%";
+ el("r_tumor").textContent=m.tumorPct.toFixed(0)+"%";
+
+ let diag="🟨 Mejorable";
+ if(m.tumorPct>80&&m.toxicity<30)diag="✅ Excelente neuroprotección";
+ else if(m.tumorPct>65&&m.toxicity<50)diag="🟦 Buena respuesta terapéutica";
+ else if(m.toxicity>70)diag="⚠️ Efectos adversos elevados";
+
+ el("r_diag").textContent=diag;
+ const pts=[];
+ if(m.reachPct<55)pts.push("La llegada a la retina es baja.");
+ else pts.push("Buena llegada del fármaco al tejido objetivo.");
+
+ if(m.doseTumor<100)pts.push("La dosis neuroprotectora es limitada.");
+ else pts.push("Dosis efectiva en retina.");
+
+ if(m.toxicity>50)pts.push("Existe liberación no dirigida significativa.");
+ else pts.push("Efectos fuera del objetivo controlados.");
+
+ el("r_points").innerHTML=pts.map(p=>"<li>"+p+"</li>").join("");
+ el("r_tip").textContent="Recomendación: optimizar direccionamiento y activación local.";
+});
+</script>
 </body>
 </html>
-
