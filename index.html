@@ -83,6 +83,61 @@
   }
 </style>
 </head>
+  <!-- ✅ Tutorial flotante (TOQUE FINAL) -->
+<div id="tour" style="
+  position:fixed; left:18px; bottom:18px; z-index:9999;
+  max-width:360px; padding:14px 14px 10px;
+  background:rgba(15,23,42,.92); color:#e9ecff;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px; backdrop-filter: blur(8px);
+  font-family:Arial; box-shadow:0 10px 35px rgba(0,0,0,.45);
+">
+  <div style="font-weight:900; font-size:14px; margin-bottom:6px">
+    🧭 Modo tutorial (rápido)
+  </div>
+  <ol style="margin:0; padding-left:18px; font-size:13px; line-height:1.35; opacity:.95">
+    <li>Presiona <b>💉 Inyectar</b> dentro de la simulación.</li>
+    <li>Sube <b>Campo magnético</b> para dirigir nanorobots.</li>
+    <li>Aumenta <b>Permeabilidad BBB</b> para facilitar el cruce.</li>
+    <li>Usa <b>Pulsos</b> y <b>Liberación</b> y mira las métricas.</li>
+  </ol>
+  <div style="display:flex; gap:8px; margin-top:10px">
+    <button id="tourHide" style="
+      flex:1; padding:9px 10px; border-radius:12px; cursor:pointer;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.08); color:#e9ecff; font-weight:900
+    ">Ocultar</button>
+    <button id="tourShow" style="
+      flex:1; padding:9px 10px; border-radius:12px; cursor:pointer;
+      border:1px solid rgba(56,189,248,.35);
+      background:rgba(56,189,248,.12); color:#e9ecff; font-weight:900;
+      display:none
+    ">Mostrar</button>
+  </div>
+</div>
+
+<script>
+  const tour = document.getElementById("tour");
+  const hideBtn = document.getElementById("tourHide");
+  const showBtn = document.getElementById("tourShow");
+
+  hideBtn.addEventListener("click", () => {
+    // deja solo un botoncito para mostrar de nuevo
+    tour.style.maxWidth = "170px";
+    tour.querySelector("ol").style.display = "none";
+    tour.querySelector("div").textContent = "🧭 Tutorial oculto";
+    hideBtn.style.display = "none";
+    showBtn.style.display = "block";
+  });
+
+  showBtn.addEventListener("click", () => {
+    tour.style.maxWidth = "360px";
+    tour.querySelector("div").textContent = "🧭 Modo tutorial (rápido)";
+    tour.querySelector("ol").style.display = "block";
+    showBtn.style.display = "none";
+    hideBtn.style.display = "block";
+  });
+</script>
 <body>
 
 <header>
@@ -178,3 +233,4 @@ window.addEventListener("message",(e)=>{
 
 </body>
 </html>
+
