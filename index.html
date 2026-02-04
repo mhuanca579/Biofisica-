@@ -138,7 +138,7 @@
     hideBtn.style.display = "block";
   });
 </script>
-<!-- 🚨 ALERTA GLOBAL AUTOMÁTICA (sin editar tu código existente) -->
+<!-- 🚨 ALERTA GLOBAL (solo 1 vez por simulación + cronómetro) -->
 <div id="ALERTA_GLOBAL_RIESGO" style="
   position:fixed; inset:0; z-index:999999;
   display:none; align-items:center; justify-content:center;
@@ -158,6 +158,11 @@
     <div style="font-size:44px; font-weight:900; line-height:1;">
       ⚠️ ALERTA DE RIESGO
     </div>
+
+    <div style="margin-top:8px; font-size:14px; opacity:.8;">
+      Tiempo de simulación: <b id="ALERTA_TIMER">00:00</b>
+    </div>
+
     <div id="ALERTA_GLOBAL_MSG" style="margin-top:10px; font-size:18px; opacity:.95; line-height:1.35;">
       Se detectó un nivel de riesgo alto en la simulación.
     </div>
@@ -169,17 +174,10 @@
         background:rgba(255,255,255,.10);
         color:#fff; font-weight:900; font-size:16px;
       ">Cerrar</button>
-
-      <button id="ALERTA_GLOBAL_OCULTAR_30" style="
-        padding:12px 18px; border-radius:14px; cursor:pointer;
-        border:1px solid rgba(56,189,248,.45);
-        background:rgba(56,189,248,.14);
-        color:#e9ecff; font-weight:900; font-size:16px;
-      ">Ocultar 30s</button>
     </div>
 
     <div style="margin-top:10px; font-size:12px; opacity:.70;">
-      Se activa automáticamente cuando aparece “Riesgo alto” o toxicidad alta.
+      Esta alerta aparece solo una vez por simulación (se reinicia al presionar Inyectar/Reiniciar).
     </div>
   </div>
 </div>
@@ -189,49 +187,96 @@
   const overlay = document.getElementById("ALERTA_GLOBAL_RIESGO");
   const msgEl   = document.getElementById("ALERTA_GLOBAL_MSG");
   const btnX    = document.getElementById("ALERTA_GLOBAL_CERRAR");
-  const btn30   = document.getElementById("ALERTA_GLOBAL_OCULTAR_30");
+  const timerEl = document.getElementById("ALERTA_TIMER");
 
-  let mutedUntil = 0;
+  // ✅ Estado: solo 1 vez por simulación
+  let alertAlreadyShown = false;
 
-  function show(msg){
-    if(Date.now() < mutedUntil) return;
+  // ✅ Timer de simulación
+  let simRunning = false;
+  let simStartMs = 0;
+  let timerInterval = null;
+
+  function fmt(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(s/60);
+    const ss = String(s%60).padStart(2,"0");
+    return String(m).padStart(2,"0")+":"+ss;
+  }
+
+  function startTimer(){
+    simRunning = true;
+    simStartMs = Date.now();
+    if(timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if(!simRunning) return;
+      timerEl.textContent = fmt(Date.now() - simStartMs);
+    }, 250);
+  }
+
+  function resetForNewSimulation(){
+    alertAlreadyShown = false;     // ✅ vuelve a permitir 1 alerta
+    overlay.style.display="none";  // oculta si estaba abierta
+    startTimer();                  // ✅ reinicia cronómetro
+  }
+
+  function showOnce(msg){
+    if(alertAlreadyShown) return;  // ✅ si ya salió, no vuelve a salir
+    alertAlreadyShown = true;
     msgEl.textContent = msg || "Se detectó un nivel de riesgo alto en la simulación.";
     overlay.style.display = "flex";
   }
-  function hide(){ overlay.style.display = "none"; }
 
-  btnX.onclick  = hide;
-  btn30.onclick = () => { mutedUntil = Date.now() + 30000; hide(); };
+  function hide(){ overlay.style.display="none"; }
+  btnX.onclick = hide;
 
-  // ✅ 1) ACTIVACIÓN POR TEXTO “RIESGO ALTO” EN LA PÁGINA (no depende del juego)
-  const watchForRiskText = () => {
-    if(Date.now() < mutedUntil) return;
+  // ✅ Hook: cuando hacen clic en Inyectar / Reiniciar (sin editar tu código)
+  document.addEventListener("click", (ev) => {
+    const t = ev.target;
+    if(!t) return;
+    const label = (t.innerText || "").toLowerCase();
 
-    // Busca el texto tal como aparece en tu panel
+    // funciona si el botón dice "Inyectar" o "Reiniciar"
+    if(label.includes("inyectar") || label.includes("reiniciar")){
+      resetForNewSimulation();
+    }
+  });
+
+  // ✅ Por si la simulación arranca sin click (fallback)
+  window.addEventListener("load", () => {
+    // inicia timer igual
+    startTimer();
+  });
+
+  // ✅ 1) Activación por texto “Riesgo alto” en la página (solo 1 vez)
+  setInterval(() => {
+    if(alertAlreadyShown) return;
+
     const txt = document.body?.innerText || "";
     if (txt.includes("Riesgo alto") || txt.includes("RIESGO ALTO")) {
-      show("⚠️ Riesgo alto detectado: demasiada exposición fuera del tumor. Baja 'Fuga fuera del objetivo' y/o sube 'Aclaramiento'.");
+      showOnce("⚠️ Riesgo alto detectado: demasiada exposición fuera del tumor. Baja 'Fuga fuera del objetivo' y/o sube 'Aclaramiento'.");
     }
-  };
+  }, 600);
 
-  // Revisa cada 500 ms
-  setInterval(watchForRiskText, 500);
+  // ✅ 2) Activación por métricas del juego (solo 1 vez)
+  const TOX_THRESHOLD = 65;
 
-  // ✅ 2) ACTIVACIÓN POR MÉTRICAS DEL JUEGO (si manda NANO_METRICS)
-  const TOX_THRESHOLD = 65; // cambia si quieres (ej. 50, 70, 80)
   window.addEventListener("message", (e) => {
     if(!e.data || e.data.type !== "NANO_METRICS") return;
+
+    // si el juego manda datos, asumimos que la simulación está corriendo
+    if(!simRunning) startTimer();
+
     const m = e.data.payload || {};
     const tox = Number(m.toxicity ?? 0);
 
     if(tox >= TOX_THRESHOLD){
-      show(`⚠️ Toxicidad alta detectada (${Math.round(tox)}%). Hay exposición en tejido sano. Ajusta fuga/aclaramiento.`);
+      showOnce(`⚠️ Toxicidad alta (${Math.round(tox)}%). Hay exposición en tejido sano. Ajusta fuga/aclaramiento.`);
     }
   });
 
 })();
 </script>
-
 <body>
 <!-- ✅ Fondo animado laboratorio (corregido: queda detrás) -->
 <canvas id="labBG" aria-hidden="true"></canvas>
