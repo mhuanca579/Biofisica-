@@ -138,95 +138,97 @@
     hideBtn.style.display = "block";
   });
 </script>
-<!-- 🚨 ALERTA GIGANTE por toxicidad -->
-<div id="toxAlert" style="
-  position:fixed; inset:0; z-index:99999;
+<!-- 🚨 ALERTA GLOBAL AUTOMÁTICA (sin editar tu código existente) -->
+<div id="ALERTA_GLOBAL_RIESGO" style="
+  position:fixed; inset:0; z-index:999999;
   display:none; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.65); backdrop-filter: blur(6px);
+  background:rgba(0,0,0,.70); backdrop-filter: blur(8px);
 ">
   <div style="
-    width:min(820px,92%); padding:22px 20px;
-    border-radius:18px;
-    border:2px solid rgba(251,113,133,.85);
+    width:min(900px,92%);
     background:rgba(15,23,42,.96);
-    color:#fff;
-    box-shadow:0 20px 70px rgba(0,0,0,.6);
+    border:3px solid rgba(251,113,133,.95);
+    border-radius:22px;
+    padding:22px 18px;
     text-align:center;
+    color:#fff;
     font-family:Arial;
+    box-shadow:0 25px 90px rgba(0,0,0,.65);
   ">
-    <div style="font-size:46px; font-weight:900; line-height:1; margin-bottom:10px;">
-      ⚠️ TOXICIDAD ALTA
+    <div style="font-size:44px; font-weight:900; line-height:1;">
+      ⚠️ ALERTA DE RIESGO
     </div>
-    <div id="toxAlertMsg" style="font-size:18px; opacity:.92; line-height:1.35;">
-      Exposición elevada en tejido sano. Ajusta parámetros.
+    <div id="ALERTA_GLOBAL_MSG" style="margin-top:10px; font-size:18px; opacity:.95; line-height:1.35;">
+      Se detectó un nivel de riesgo alto en la simulación.
     </div>
 
-    <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
-      <button id="toxFix" style="
-        padding:10px 14px; border-radius:12px; cursor:pointer;
-        border:1px solid rgba(56,189,248,.4);
-        background:rgba(56,189,248,.14); color:#e9ecff; font-weight:900;
-      ">🔧 Aplicar modo seguro</button>
-
-      <button id="toxClose" style="
-        padding:10px 14px; border-radius:12px; cursor:pointer;
-        border:1px solid rgba(255,255,255,.18);
-        background:rgba(255,255,255,.08); color:#e9ecff; font-weight:900;
+    <div style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button id="ALERTA_GLOBAL_CERRAR" style="
+        padding:12px 18px; border-radius:14px; cursor:pointer;
+        border:1px solid rgba(255,255,255,.22);
+        background:rgba(255,255,255,.10);
+        color:#fff; font-weight:900; font-size:16px;
       ">Cerrar</button>
+
+      <button id="ALERTA_GLOBAL_OCULTAR_30" style="
+        padding:12px 18px; border-radius:14px; cursor:pointer;
+        border:1px solid rgba(56,189,248,.45);
+        background:rgba(56,189,248,.14);
+        color:#e9ecff; font-weight:900; font-size:16px;
+      ">Ocultar 30s</button>
     </div>
 
-    <div style="margin-top:10px; font-size:12px; opacity:.7;">
-      (La alerta aparece automáticamente cuando la toxicidad supera el umbral)
+    <div style="margin-top:10px; font-size:12px; opacity:.70;">
+      Se activa automáticamente cuando aparece “Riesgo alto” o toxicidad alta.
     </div>
   </div>
 </div>
 
 <script>
 (() => {
-  const overlay = document.getElementById("toxAlert");
-  const msgEl   = document.getElementById("toxAlertMsg");
-  const btnClose= document.getElementById("toxClose");
-  const btnFix  = document.getElementById("toxFix");
+  const overlay = document.getElementById("ALERTA_GLOBAL_RIESGO");
+  const msgEl   = document.getElementById("ALERTA_GLOBAL_MSG");
+  const btnX    = document.getElementById("ALERTA_GLOBAL_CERRAR");
+  const btn30   = document.getElementById("ALERTA_GLOBAL_OCULTAR_30");
 
-  // 🔧 Ajusta el umbral aquí:
-  const TOX_THRESHOLD = 65; // % (ej: 60–75)
+  let mutedUntil = 0;
 
-  // Evita parpadeo: que baje bastante para ocultar
-  const HYSTERESIS = 10; // baja a 55 para ocultar si threshold 65
+  function show(msg){
+    if(Date.now() < mutedUntil) return;
+    msgEl.textContent = msg || "Se detectó un nivel de riesgo alto en la simulación.";
+    overlay.style.display = "flex";
+  }
+  function hide(){ overlay.style.display = "none"; }
 
-  // Para mandar preset al juego (si tu iframe existe)
-  const iframe = document.querySelector("iframe");
-  const sendPreset = (payload) => iframe?.contentWindow?.postMessage({ type:"APPLY_PRESET", payload }, "*");
+  btnX.onclick  = hide;
+  btn30.onclick = () => { mutedUntil = Date.now() + 30000; hide(); };
 
-  btnClose.onclick = () => overlay.style.display = "none";
-  btnFix.onclick = () => {
-    // “Modo seguro”: baja fuga, sube aclaramiento, moderar dosis/liberación
-    sendPreset({ leak:8, clear:45, rel:55, pulse:60, dose:240, flow:1.3, B:70, bbb:35, type:"lig" });
-    overlay.style.display = "none";
+  // ✅ 1) ACTIVACIÓN POR TEXTO “RIESGO ALTO” EN LA PÁGINA (no depende del juego)
+  const watchForRiskText = () => {
+    if(Date.now() < mutedUntil) return;
+
+    // Busca el texto tal como aparece en tu panel
+    const txt = document.body?.innerText || "";
+    if (txt.includes("Riesgo alto") || txt.includes("RIESGO ALTO")) {
+      show("⚠️ Riesgo alto detectado: demasiada exposición fuera del tumor. Baja 'Fuga fuera del objetivo' y/o sube 'Aclaramiento'.");
+    }
   };
 
-  let shown = false;
+  // Revisa cada 500 ms
+  setInterval(watchForRiskText, 500);
 
+  // ✅ 2) ACTIVACIÓN POR MÉTRICAS DEL JUEGO (si manda NANO_METRICS)
+  const TOX_THRESHOLD = 65; // cambia si quieres (ej. 50, 70, 80)
   window.addEventListener("message", (e) => {
     if(!e.data || e.data.type !== "NANO_METRICS") return;
     const m = e.data.payload || {};
     const tox = Number(m.toxicity ?? 0);
-    const ctrl= Number(m.tumorPct ?? 0);
 
-    // Mostrar si supera umbral
-    if(!shown && tox >= TOX_THRESHOLD){
-      shown = true;
-      msgEl.textContent = `Toxicidad: ${Math.round(tox)}%. Control tumoral: ${Math.round(ctrl)}%. 
-Recomendación: baja Fuga fuera del objetivo y sube Aclaramiento.`;
-      overlay.style.display = "flex";
-    }
-
-    // Ocultar cuando ya esté claramente controlado
-    if(shown && tox <= (TOX_THRESHOLD - HYSTERESIS)){
-      shown = false;
-      overlay.style.display = "none";
+    if(tox >= TOX_THRESHOLD){
+      show(`⚠️ Toxicidad alta detectada (${Math.round(tox)}%). Hay exposición en tejido sano. Ajusta fuga/aclaramiento.`);
     }
   });
+
 })();
 </script>
 
@@ -419,6 +421,7 @@ window.addEventListener("message",(e)=>{
 
 </body>
 </html>
+
 
 
 
