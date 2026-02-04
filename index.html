@@ -138,6 +138,97 @@
     hideBtn.style.display = "block";
   });
 </script>
+<!-- 🚨 ALERTA GIGANTE por toxicidad -->
+<div id="toxAlert" style="
+  position:fixed; inset:0; z-index:99999;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.65); backdrop-filter: blur(6px);
+">
+  <div style="
+    width:min(820px,92%); padding:22px 20px;
+    border-radius:18px;
+    border:2px solid rgba(251,113,133,.85);
+    background:rgba(15,23,42,.96);
+    color:#fff;
+    box-shadow:0 20px 70px rgba(0,0,0,.6);
+    text-align:center;
+    font-family:Arial;
+  ">
+    <div style="font-size:46px; font-weight:900; line-height:1; margin-bottom:10px;">
+      ⚠️ TOXICIDAD ALTA
+    </div>
+    <div id="toxAlertMsg" style="font-size:18px; opacity:.92; line-height:1.35;">
+      Exposición elevada en tejido sano. Ajusta parámetros.
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+      <button id="toxFix" style="
+        padding:10px 14px; border-radius:12px; cursor:pointer;
+        border:1px solid rgba(56,189,248,.4);
+        background:rgba(56,189,248,.14); color:#e9ecff; font-weight:900;
+      ">🔧 Aplicar modo seguro</button>
+
+      <button id="toxClose" style="
+        padding:10px 14px; border-radius:12px; cursor:pointer;
+        border:1px solid rgba(255,255,255,.18);
+        background:rgba(255,255,255,.08); color:#e9ecff; font-weight:900;
+      ">Cerrar</button>
+    </div>
+
+    <div style="margin-top:10px; font-size:12px; opacity:.7;">
+      (La alerta aparece automáticamente cuando la toxicidad supera el umbral)
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const overlay = document.getElementById("toxAlert");
+  const msgEl   = document.getElementById("toxAlertMsg");
+  const btnClose= document.getElementById("toxClose");
+  const btnFix  = document.getElementById("toxFix");
+
+  // 🔧 Ajusta el umbral aquí:
+  const TOX_THRESHOLD = 65; // % (ej: 60–75)
+
+  // Evita parpadeo: que baje bastante para ocultar
+  const HYSTERESIS = 10; // baja a 55 para ocultar si threshold 65
+
+  // Para mandar preset al juego (si tu iframe existe)
+  const iframe = document.querySelector("iframe");
+  const sendPreset = (payload) => iframe?.contentWindow?.postMessage({ type:"APPLY_PRESET", payload }, "*");
+
+  btnClose.onclick = () => overlay.style.display = "none";
+  btnFix.onclick = () => {
+    // “Modo seguro”: baja fuga, sube aclaramiento, moderar dosis/liberación
+    sendPreset({ leak:8, clear:45, rel:55, pulse:60, dose:240, flow:1.3, B:70, bbb:35, type:"lig" });
+    overlay.style.display = "none";
+  };
+
+  let shown = false;
+
+  window.addEventListener("message", (e) => {
+    if(!e.data || e.data.type !== "NANO_METRICS") return;
+    const m = e.data.payload || {};
+    const tox = Number(m.toxicity ?? 0);
+    const ctrl= Number(m.tumorPct ?? 0);
+
+    // Mostrar si supera umbral
+    if(!shown && tox >= TOX_THRESHOLD){
+      shown = true;
+      msgEl.textContent = `Toxicidad: ${Math.round(tox)}%. Control tumoral: ${Math.round(ctrl)}%. 
+Recomendación: baja Fuga fuera del objetivo y sube Aclaramiento.`;
+      overlay.style.display = "flex";
+    }
+
+    // Ocultar cuando ya esté claramente controlado
+    if(shown && tox <= (TOX_THRESHOLD - HYSTERESIS)){
+      shown = false;
+      overlay.style.display = "none";
+    }
+  });
+})();
+</script>
 
 <body>
 <!-- ✅ Fondo animado laboratorio (corregido: queda detrás) -->
@@ -328,5 +419,6 @@ window.addEventListener("message",(e)=>{
 
 </body>
 </html>
+
 
 
